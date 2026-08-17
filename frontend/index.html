@@ -81,10 +81,7 @@
             transition: all 0.2s ease;
         }
 
-        .tab-btn:hover {
-            color: var(--text-main);
-        }
-
+        .tab-btn:hover { color: var(--text-main); }
         .tab-btn.active {
             background: var(--card-bg);
             color: var(--accent-blue);
@@ -128,21 +125,14 @@
             flex-direction: column;
         }
 
-        .tab-content {
-            display: none;
-            flex-direction: column;
-            flex: 1;
-        }
-
-        .tab-content.active {
-            display: flex;
-        }
+        .tab-content { display: none; flex-direction: column; flex: 1; }
+        .tab-content.active { display: flex; }
 
         /* CHAT STYLES */
         .chat-container {
             display: flex;
             flex-direction: column;
-            height: 70vh;
+            height: 75vh;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -180,7 +170,7 @@
         .message {
             display: flex;
             flex-direction: column;
-            max-width: 80%;
+            max-width: 85%;
             animation: fadeIn 0.3s ease;
         }
 
@@ -236,16 +226,23 @@
             border-top: 1px solid var(--border-color);
             display: flex;
             gap: 0.75rem;
+            align-items: flex-end;
         }
 
+        /* TEXTAREA CON CRECIMIENTO VERTICAL DINÁMICO */
         .chat-input {
             flex: 1;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-main);
             padding: 0.85rem 1.25rem;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 0.95rem;
+            resize: none;
+            min-height: 48px;
+            max-height: 220px;
+            overflow-y: auto;
+            line-height: 1.4;
         }
 
         .chat-input:focus { outline: none; border-color: var(--accent-blue); }
@@ -259,6 +256,7 @@
             border-radius: 10px;
             cursor: pointer;
             transition: opacity 0.2s;
+            height: 48px;
         }
 
         .send-btn:hover { opacity: 0.9; }
@@ -281,23 +279,14 @@
         }
 
         .card:hover { transform: translateY(-2px); border-color: var(--accent-blue); }
-
-        .card-title {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
+        .card-title { font-size: 0.875rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
         .card-value { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
         .card-desc { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem; }
 
         .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
         label { font-size: 0.875rem; color: var(--text-muted); font-weight: 600; }
 
-        input[type="text"], input[type="password"], select, textarea {
+        input[type="text"], input[type="password"], select {
             background: #0f172a;
             border: 1px solid var(--border-color);
             color: var(--text-main);
@@ -307,7 +296,7 @@
             width: 100%;
         }
 
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-blue); }
+        input:focus, select:focus { outline: none; border-color: var(--accent-blue); }
 
         .btn {
             background: var(--accent-blue);
@@ -324,100 +313,33 @@
             gap: 0.5rem;
         }
 
-        .btn-small {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.8rem;
-            margin-top: 0;
-            border-radius: 6px;
-        }
-
+        .btn-small { padding: 0.4rem 0.75rem; font-size: 0.8rem; margin-top: 0; border-radius: 6px; }
         .btn-green { background: var(--accent-green); color: #0f172a; }
-
         .btn:hover { opacity: 0.9; }
 
-        .msg-box {
-            font-size: 0.875rem;
-            margin-top: 0.75rem;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            display: none;
-        }
-
+        .msg-box { font-size: 0.875rem; margin-top: 0.75rem; padding: 0.5rem 1rem; border-radius: 6px; display: none; }
         .msg-success { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); border: 1px solid rgba(34, 197, 94, 0.3); }
         .msg-error { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
 
-        .file-list {
-            list-style: none;
-            margin-top: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .file-item {
-            background: #0f172a;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
+        .file-list { list-style: none; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .file-item { background: #0f172a; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .file-actions { display: flex; gap: 0.5rem; }
 
-        /* MODAL DE VISUALIZACIÓN DE NOTAS */
+        /* MODAL */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(8px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
         }
-
         .modal-content {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            width: 90%;
-            max-width: 800px;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px;
+            width: 90%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
+        .modal-header { padding: 1.25rem 1.5rem; background: #0f172a; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 1.5rem; overflow-y: auto; font-family: 'Fira Code', monospace; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; background: #090d16; color: #e2e8f0; }
 
-        .modal-header {
-            padding: 1.25rem 1.5rem;
-            background: #0f172a;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-            overflow-y: auto;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            background: #090d16;
-            color: #e2e8f0;
-        }
-
-        footer {
-            text-align: center;
-            padding: 1.5rem;
-            border-top: 1px solid var(--border-color);
-            color: var(--text-muted);
-            font-size: 0.875rem;
-        }
+        footer { text-align: center; padding: 1.5rem; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.875rem; }
     </style>
 </head>
 <body>
@@ -462,7 +384,7 @@
                 </div>
 
                 <div class="chat-input-area">
-                    <input type="text" id="chat-input" class="chat-input" placeholder="Haz una consulta (ej: '¿Puedes analizar el archivo PDF de informes?', 'Escribe una nota en Obsidian')" onkeypress="handleKeyPress(event)">
+                    <textarea id="chat-input" class="chat-input" rows="1" placeholder="Haz una consulta (Enter para enviar, Shift+Enter para salto de línea)..." oninput="autoExpandTextarea(this)" onkeydown="handleKeyDown(event)"></textarea>
                     <button class="send-btn" onclick="sendMessage()">Enviar</button>
                 </div>
             </div>
@@ -579,8 +501,17 @@
             document.getElementById(`tab-${tabId}`).classList.add('active');
         }
 
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') sendMessage();
+        /* AUTO-EXPANSIÓN VERTICAL DEL TEXTAREA DE CHAT */
+        function autoExpandTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
         }
 
         function showMsg(text, isSuccess = true, elementId = 'msg-box') {
@@ -589,7 +520,7 @@
             box.textContent = text;
             box.className = `msg-box ${isSuccess ? 'msg-success' : 'msg-error'}`;
             box.style.display = 'block';
-            setTimeout(() => { box.style.display = 'none'; }, 5000);
+            setTimeout(() => { box.style.display = 'none'; }, 6000);
         }
 
         async function sendMessage() {
@@ -603,7 +534,10 @@
             userDiv.className = 'message user';
             userDiv.innerHTML = `<div class="bubble">${escapeHtml(messageText)}</div>`;
             messagesContainer.appendChild(userDiv);
+            
+            // Limpiar y resetear altura del textarea
             input.value = '';
+            input.style.height = 'auto';
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
             const loadingDiv = document.createElement('div');
@@ -779,7 +713,7 @@
             }
         }
 
-        /* SUBIR PDF AL RAG */
+        /* SUBIR PDF AL RAG CON MANEJO DE ERRORES Y LÍMITES NGINX (50MB) */
         async function uploadPDFToRAG() {
             const fileInput = document.getElementById('pdf-file-input');
             if (!fileInput.files.length) {
@@ -787,8 +721,11 @@
                 return;
             }
 
+            const file = fileInput.files[0];
+            showMsg(`⏳ Subiendo e indexando '${file.name}' en el RAG...`, true, 'rag-msg-box');
+
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            formData.append('file', file);
 
             try {
                 const res = await fetch('/api/tools/rag/upload-pdf', {
@@ -796,15 +733,20 @@
                     body: formData
                 });
 
-                const data = await res.json();
+                let data = {};
+                try { data = await res.json(); } catch (e) {}
+
                 if (res.ok) {
-                    showMsg(`✅ ${data.message}`, true, 'rag-msg-box');
+                    showMsg(`✅ ${data.message || 'PDF cargado e indexado exitosamente.'}`, true, 'rag-msg-box');
                     fileInput.value = '';
+                } else if (res.status === 413) {
+                    showMsg(`❌ Error 413: El archivo PDF excede el tamaño máximo permitido.`, false, 'rag-msg-box');
                 } else {
-                    showMsg(`❌ Error: ${data.detail}`, false, 'rag-msg-box');
+                    showMsg(`❌ Error (${res.status}): ${data.detail || 'Fallo en la subida'}`, false, 'rag-msg-box');
                 }
             } catch (err) {
-                showMsg('Error de red al subir el PDF.', false, 'rag-msg-box');
+                console.error("Error al subir PDF:", err);
+                showMsg('❌ Error de red o tamaño excedido al subir el PDF. Verifica que la Nginx permita cargas de 50MB.', false, 'rag-msg-box');
             }
         }
 
