@@ -1,6 +1,6 @@
-# Especificación de Harness Engineering y Matriz de Autonomía (Sistema Multiagente Edge)
+# Especificación de Harness Engineering, MCP de Análisis y Matriz de Autonomía
 
-**Documento de Arquitectura y Gobernanza IA**  
+**Documento de Arquitectura y Gobernanza IA (Actualizado con MCP de Análisis y Bóveda Memoria)**  
 **Proyecto:** Asistente Agéntico Edge Distribuido (/AssAntigravity)  
 **Autor:** Antigravity (Arquitecto de Software Senior)  
 **Revisor:** Director del Proyecto  
@@ -18,17 +18,40 @@ El **Harness Engineering** (Ingeniería de Contención y Seguridad IA) en la arq
 
 ---
 
-## 2. Taxonomía Completa del Ecosistema
+## 2. Taxonomía Completa del Ecosistema y MCPs Especializados
 
-### A. Agentes (Nodos del StateGraph de LangGraph)
+### A. MCP de Análisis de Documentos (`Docling / NotebookLM MCP`)
+Para potenciar la capacidad de análisis del **Agente Investigador**, se integra el **`Docling / NotebookLM MCP`**:
+- **Función Principal:** Ingesta y parseo avanzado de documentos complejos (PDFs de múltiples columnas, imágenes con texto, tablas complejas y Markdown).
+- **Capacidades:**
+  - Extracción de información relevante, entidades clave y relaciones jerárquicas.
+  - Generación de resúmenes sintéticos de alto nivel sobre colecciones de documentos.
+  - Conversión de PDF/Docx a formato Markdown estructurado de alta fidelidad para RAG.
+
+### B. Redefinición del Propósito Exclusivo de la Bóveda de Obsidian
+La Bóveda de Obsidian se constituye como la **Memoria de Investigación y Bitácora de Aprendizaje Continuo** del Asistente Antigravity, sirviendo para dos funciones primordiales:
+1. **Para el Asistente:** Almacenar apuntes estructurados, resúmenes de investigaciones profundas solicitadas, registro de fallas del sistema y propuestas de automejora.
+2. **Para el Usuario:** Disponer de un registro auditable, organizado e hipervinculado de todas las interacciones relevantes, decisiones y hallazgos.
+
+```
+/data/obsidian/
+├── 📁 Investigaciones/         # Apuntes y síntesis de investigaciones solicitadas
+├── 📁 Sintesis_Interacciones/  # Puntos clave y contexto relevante de conversaciones
+├── 📁 Fallas_y_Mejoras/        # Log de autodiagnóstico, errores y propuestas de mejora
+└── 📁 Bitacora_Ejecucion/      # Registro auditable de acciones y tareas ejecutadas
+```
+
+---
+
+## 3. Taxonomía de Nodos del StateGraph (LangGraph)
 
 ```mermaid
 graph TD
     User([Usuario / Web UI]) <--> Supervisor[Supervisor / Enrutador]
     
-    Supervisor --> Investigador[Agente Investigador]
+    Supervisor --> Investigador[Agente Investigador + Docling/NotebookLM MCP]
     Supervisor --> Redactor[Agente Redactor LaTeX]
-    Supervisor --> ObsidianAg[Agente Admin. Obsidian]
+    Supervisor --> ObsidianAg[Agente Admin. Obsidian / Memoria]
     Supervisor --> FinanceAg[Agente Admin. Finanzas]
     Supervisor --> EmailAg[Agente Revisor Correos]
     
@@ -36,7 +59,7 @@ graph TD
     FinanceAg -.->|HITL Interrupt| CheckFinance{Aprobación Usuario}
     EmailAg -.->|HITL Interrupt| CheckEmail{Aprobación Usuario}
     
-    CheckObsidian -->|Aprobado| WriteObsidian[(Bóveda .md)]
+    CheckObsidian -->|Aprobado| WriteObsidian[(Apunte en Bóveda .md)]
     CheckFinance -->|Aprobado| WriteFinance[(Excel Maestro .xlsx)]
     CheckEmail -->|Aprobado| SendEmail[API Google Workspace]
     
@@ -44,30 +67,21 @@ graph TD
     Redactor --> End([Respuesta al Usuario])
 ```
 
-1. **Supervisor (Enrutador Central):** Evalúa la intención de la consulta, selecciona el agente especialista adecuado y administra la cascada de failover LLM (`qwen3.5:4b` $\rightarrow$ Gemini $\rightarrow$ `qwen2.5:1.5b`).
-2. **Investigador:** Experto en análisis del estado del arte, búsqueda web/arXiv y consultas semánticas RAG. Operación 100% autónoma.
-3. **Redactor:** Especialista en estructuración de documentos y sintaxis LaTeX pura. Generación de borradores y visualización 100% autónoma.
-4. **Administrador de Obsidian:** Gestor de conocimiento personal. Operación autónoma en mapeo y lectura; **interrumpida en escritura/modificación/eliminación de notas `.md`**.
-5. **Administrador de Finanzas:** Analista cuantitativo. Operación autónoma en lectura de planillas `.xlsx` y gráficos en memoria; **interrumpida al sobrescribir archivos maestros o exportar balances**.
-6. **Revisor de Correos:** Gestor de comunicaciones. Operación autónoma al leer y generar borradores (*drafts*); **interrumpida al enviar/eliminar correos o agendar eventos en Google Calendar**.
-
 ---
 
-## 3. Matriz de Autonomía y Permisos
+## 4. Matriz de Autonomía y Permisos
 
 | Agente | Acciones Autónomas (Sin Interrupción) | Acciones Interrumpidas (HITL - Requieren Aprobación) | Puntos de Pausa (LangGraph Node) |
 | :--- | :--- | :--- | :--- |
-| **Investigador** | • Buscar en Web y arXiv.<br>• Consultar RAG (Qdrant/PDFs).<br>• Ejecutar sandbox de cálculo en Jupyter. | *Ninguna.* (Modo lectura y cómputo analítico puro). | N/A |
+| **Investigador** | • Buscar en Web y arXiv.<br>• Consultar RAG (Qdrant/PDFs).<br>• Ejecutar análisis con **Docling / NotebookLM MCP**.<br>• Ejecutar sandbox de cálculo en Jupyter. | *Ninguna.* (Modo lectura, extracción y cómputo analítico puro). | N/A |
 | **Redactor** | • Formatear textos y generar sintaxis LaTeX.<br>• Compilar archivos `.tex` temporales.<br>• Generar vistas previas de respuestas. | *Ninguna.* (Genera únicamente borradores en memoria y caché). | N/A |
-| **Admin. Obsidian** | • Leer notas de la bóveda (`.md`).<br>• Mapear grafo de enlaces bidireccionales.<br>• Analizar etiquetas y metadatos YAML. | • **Crear nuevas notas `.md` en la bóveda real.**<br>• **Modificar o sobreescribir notas existentes.**<br>• **Eliminar o renombrar archivos de la bóveda.** | `interrupt_before=["obsidian_writer_node"]` |
+| **Admin. Obsidian (Memoria)** | • Leer notas de la bóveda de memoria (`.md`).<br>• Consultar aprendizajes y hallazgos pasados.<br>• Mapear relaciones entre investigaciones. | • **Crear nuevos apuntes de investigación `.md` en la bóveda.**<br>• **Registrar hallazgos, fallas o mejoras en disco.**<br>• **Modificar o eliminar notas existentes en la bóveda.** | `interrupt_before=["obsidian_writer_node"]` |
 | **Admin. Finanzas** | • Leer hojas de cálculo (`.xlsx`/`.csv`).<br>• Realizar cálculos estadísticos en memoria.<br>• Generar gráficos y resúmenes ejecutivos. | • **Sobrescribir archivos Excel maestros.**<br>• **Exportar o guardar nuevos reportes financieros en disco.**<br>• **Emitir alertas de saldo hacia servicios externos.** | `interrupt_before=["finance_writer_node"]` |
 | **Revisor Correos** | • Leer la bandeja de entrada de Gmail.<br>• Categorizar y resumir correos recibidos.<br>• Generar borradores de correo (*drafts*). | • **Enviar correos electrónicos a destinatarios.**<br>• **Eliminar o archivar correos de la bandeja.**<br>• **Crear o modificar eventos en Google Calendar.** | `interrupt_before=["email_action_node"]` |
 
 ---
 
-## 4. Estructura del Estado Global (`AgentState`) para Human-In-The-Loop
-
-Para dar soporte a las pausas e interrupciones de estado en LangGraph, el esquema del `AgentState` se extenderá con los atributos de contención:
+## 5. Estructura del Estado Global (`AgentState`) para Human-In-The-Loop
 
 ```python
 class PendingAction(TypedDict):
@@ -75,8 +89,8 @@ class PendingAction(TypedDict):
     agent_name: str            # Agente solicitante (ej. 'obsidian_agent', 'email_agent')
     tool_name: str             # Herramienta a ejecutar (ej. 'create_obsidian_note', 'send_gmail')
     description: str           # Resumen ejecutivo para el usuario
-    payload: Dict[str, Any]    # Parámetros exactos (ej. {filename: "Nota.md", content: "..."})
-    risk_level: str            # "MEDIUM" (escritura local) | "HIGH" (envío externo / borrado)
+    payload: Dict[str, Any]    # Parámetros exactos (ej. {filename: "Investigacion_IA.md", content: "..."})
+    risk_level: str            # "MEDIUM" (escritura local de apunte) | "HIGH" (envío externo / borrado)
 
 class AgentState(TypedDict):
     # Campos base conversacionales
@@ -88,8 +102,8 @@ class AgentState(TypedDict):
     active_model: str
     
     # Contextos acumulados de herramientas
-    research_context: Optional[str]
-    obsidian_context: Optional[str]
+    research_context: Optional[str]   # Incluye hallazgos del Docling / NotebookLM MCP
+    obsidian_context: Optional[str]   # Contexto de memoria de notas anteriores
     finance_context: Optional[str]
     email_context: Optional[str]
     
@@ -105,14 +119,10 @@ class AgentState(TypedDict):
 
 ---
 
-## 5. Arquitectura del Flujo HITL en LangGraph
-
-### Mecanismo de Pausa e Interrupción (`interrupt_before`)
-
-En la compilación del grafo, los nodos de escritura destructiva se aíslan mediante **`interrupt_before`**:
+## 6. Arquitectura del Flujo HITL en LangGraph
 
 ```python
-# Definición conceptual de la compilación del StateGraph con Checkpointer de Memoria
+# Definición de compilación del StateGraph con Checkpointer de Memoria e Interrupciones
 app_graph = workflow.compile(
     checkpointer=memory_checkpointer,
     interrupt_before=[
@@ -123,25 +133,25 @@ app_graph = workflow.compile(
 )
 ```
 
-### Ciclo de Vida de una Acción Interrumpida:
+### Ciclo de Vida de Guardado de Apunte en Obsidian:
 
 ```
-[1. Usuario solicita: "Envía un correo a Juan confirmando la reunión de mañana"]
-                              │
-                              ▼
-[2. Agente Revisor Correos genera propuesta de borrador en 'pending_action']
-                              │
-                              ▼
-[3. LangGraph llega a 'email_action_node' -> PUNTOS DE INTERRUPCIÓN DISPARADO]
-                              │
-                              ▼
-[4. El Estado se guarda en SQLite Checkpointer y la ejecución se PAUSA]
-                              │
-                              ▼
-[5. Backend FastAPI emite estado 'PENDING_APPROVAL' hacia la Web UI]
-                              │
-                              ▼
-[6. Web UI despliega Modal de Confirmación de Acción Crítica]
+[1. Usuario solicita: "Investiga sobre arquitecturas RAG híbridas y guarda un apunte en Obsidian"]
+                                      │
+                                      ▼
+[2. Agente Investigador procesa documentos con Docling / NotebookLM MCP y extrae síntesis]
+                                      │
+                                      ▼
+[3. Agente Obsidian propone guardar apunte en '/obsidian/Investigaciones/RAG_Hibrido.md']
+                                      │
+                                      ▼
+[4. LangGraph llega a 'obsidian_writer_node' -> PUNTO DE INTERRUPCIÓN DISPARADO]
+                                      │
+                                      ▼
+[5. El Estado se guarda en SQLite Checkpointer y la ejecución se PAUSA]
+                                      │
+                                      ▼
+[6. Web UI despliega Modal: "¿Autorizas guardar el apunte de investigación en Obsidian?"]
          │                                       │
          ├─── (Usuario clica APROBAR) ───────────┼─── (Usuario clica RECHAZAR)
          │                                       │
@@ -149,54 +159,13 @@ app_graph = workflow.compile(
 [7a. REST API: /api/chat/approve-action]   [7b. REST API: /api/chat/reject-action]
          │                                       │
          ▼                                       ▼
-[8a. LangGraph reanuda con APROBADO]       [8b. LangGraph reanuda con RECHAZADO]
-         │                                       │
-         ▼                                       ▼
-[9a. 'email_action_node' envía correo]    [9b. Acción cancelada. Redactor notifica]
+[8a. Se crea RAG_Hibrido.md en Bóveda]     [8b. Se cancela guardado en disco]
 ```
-
----
-
-## 6. Protocolo de Comunicación con la Web UI (Modal de Confirmación)
-
-Cuando `pending_action` no es nulo y la ejecución se encuentra en estado de pausa, el endpoint `/api/chat` o la transmisión WebSocket entregará una respuesta especial:
-
-### Payload de Notificación entregado al Frontend:
-```json
-{
-  "status": "AWAITING_USER_APPROVAL",
-  "thread_id": "thread_main_user",
-  "pending_action": {
-    "action_id": "act-984214",
-    "agent_name": "Revisor de Correos",
-    "tool_name": "gmail_send_email",
-    "description": "El agente solicita autorización para enviar un correo electrónico.",
-    "risk_level": "HIGH",
-    "payload": {
-      "to": "juan@empresa.com",
-      "subject": "Confirmación de Reunión",
-      "body": "Hola Juan, confirmo nuestra reunión para mañana a las 10:00 AM."
-    }
-  }
-}
-```
-
-### Comportamiento del Modal en la Interfaz Web:
-1. Muestra un recuadro de alerta con borde amarillo/rojo indicando **"⚠️ Aprobación Requerida para Acción Crítica"**.
-2. Desglosa los parámetros exactos (Destinatario, Asunto, Cuerpo, Archivo a modificar o Diff).
-3. Ofrece 2 opciones claras:
-   - **🟢 Aprobar y Ejecutar Acción:** Envía `POST /api/chat/approve-action` con `{ action_id: "act-984214" }` y reanuda el grafo.
-   - **🔴 Cancelar Acción:** Envía `POST /api/chat/reject-action` con feedback opcional, abortando la ejecución sin alterar archivos ni enviar correos.
 
 ---
 
 ## 7. Políticas de Fallas Seguras (Fail-Safe Protocol)
 
-1. **Sin Autoejecución Retrospectiva:** Si una acción es rechazada por el usuario, el grafo registra el rechazo en el historial del agente y pasa el control al Redactor para notificar: *"La acción de enviar correo a Juan fue cancelada a petición del usuario."*
-2. **Validación de Firma de Herramienta (Tool Payload Schema):** Antes de pausar para aprobación, el argumento de la herramienta es validado con Pydantic. Si los argumentos fallan la validación, la acción se descarta inmediatamente sin molestar al usuario con modales de aprobación sobre cargas corruptas.
+1. **Sin Autoejecución Retrospectiva:** Si el guardado de un apunte o envío de correo es rechazado, el agente notifica de forma transparente: *"El apunte fue presentado en pantalla pero no se guardó en la bóveda de Obsidian a petición del usuario."*
+2. **Validación de Estructura de Apunte:** Las notas creadas en Obsidian siguen una plantilla YAML estandarizada (`tags`, `fecha`, `categoria`, `resumen`).
 3. **Persistencia Transaccional:** Todas las decisiones de aprobación o rechazo quedan registradas en `/app/dbs/audit_log.json` para auditoría de gobernanza del sistema.
-
----
-
-### Confirmación de Antigravity (Arquitecto de Software)
-He comprendido en su totalidad la **Taxonomía** y los requisitos de **Harness Engineering**. Quedo a la espera de la revisión y aprobación de este documento especificación (`harness_spec.md`) por parte del **Director del Proyecto** para proceder con su implementación en el código fuente.
