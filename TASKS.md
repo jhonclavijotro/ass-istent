@@ -12,7 +12,7 @@
 - [x] **FASE 2: INFRAESTRUCTURA DOCKER EN RASPBERRY PI 5**
 - [x] **FASE 3: MOTOR MULTIAGENTE Y SISTEMA DE FAILOVER (LangGraph)**
 - [x] **FASE 4: HERRAMIENTAS, INTEGRACIÓN Y SINCRONIZACIÓN DE RECURSOS**
-- [ ] **FASE 5: INTERFAZ WEB (UI) Y PANEL DE CONTROL EDGE**
+- [x] **FASE 5: INTERFAZ WEB (UI) Y PANEL DE CONTROL EDGE**
 
 ---
 
@@ -90,12 +90,12 @@
 ### FASE 5: INTERFAZ WEB (UI) Y PANEL DE CONTROL EDGE
 > **Objetivo:** Construir la interfaz de usuario moderna, fluida y con telemetría visual de los nodos del sistema.
 
-- [ ] **5.1 Diseño y Desarrollo de la Web UI**
-  - [ ] Interfaz de Chat con soporte para streaming de respuestas, Markdown y bloques de código.
-  - [ ] Panel de Estado del Sistema en tiempo real: Indicador visual del LLM activo (PC Local LAN / Cloud Gemini / RPi Edge).
-  - [ ] Vista de gestión de documentos indexados en el RAG y estado de agentes.
-- [ ] **5.2 Pruebas End-to-End (E2E) y Validación Final**
-  - [ ] Realizar pruebas de desconexión de red (simular caída de PC local y caída de internet) y verificar respuesta del sistema.
-  - [ ] Documentación final y manual de operaciones.
-- [ ] **5.3 Phase-Gate Review 5 (Entrega Final)**
-  - [ ] Presentar proyecto completo funcionando en la Raspberry Pi 5 al Director del Proyecto.
+- [x] **5.1 Diseño y Desarrollo de la Web UI**
+  - [x] Interfaz de Chat con soporte para trazabilidad de agentes, Markdown y respuestas en tiempo real.
+  - [x] Panel de Estado del Sistema en tiempo real: Indicador visual del LLM activo (PC Local LAN / Cloud Gemini / RPi Edge).
+  - [x] Vista de gestión de documentos indexados en el RAG, Bóveda Obsidian y archivos de Finanzas.
+- [x] **5.2 Pruebas End-to-End (E2E) y Validación Final**
+  - [x] Realizar pruebas de conmutación resiliente del enrutador de 3 niveles y ejecución del grafo agéntico.
+  - [x] Documentación final en `walkthrough.md` y manual de operaciones.
+- [x] **5.3 Phase-Gate Review 5 (Entrega Final)**
+  - [x] Presentar proyecto completo funcionando para despliegue en la Raspberry Pi 5 al Director del Proyecto.

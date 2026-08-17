@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistente Agéntico Edge - Panel de Control</title>
+    <title>Asistente Agéntico Edge - Panel de Control & Chat</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #0f172a;
             --card-bg: #1e293b;
+            --card-hover: #334155;
             --border-color: #334155;
             --accent-blue: #38bdf8;
             --accent-green: #22c55e;
+            --accent-purple: #a855f7;
             --accent-amber: #f59e0b;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --chat-user-bg: #0284c7;
+            --chat-agent-bg: #1e293b;
         }
 
         * {
@@ -34,23 +38,58 @@
             flex-direction: column;
         }
 
+        /* HEADER & NAVIGATION */
         header {
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(12px);
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-color);
-            padding: 1.25rem 2rem;
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .logo {
+        .brand {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             font-size: 1.25rem;
             font-weight: 700;
             color: var(--accent-blue);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: #0f172a;
+            padding: 0.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--accent-blue);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .status-badge {
@@ -80,14 +119,163 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
+        /* MAIN CONTAINER */
         main {
             flex: 1;
             padding: 2rem;
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
             width: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* TAB 1: CHAT INTERFACE */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1rem 1.5rem;
+            background: #0f172a;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .active-tier-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.agent {
+            align-self: flex-start;
+        }
+
+        .bubble {
+            padding: 1rem 1.25rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .message.user .bubble {
+            background: var(--chat-user-bg);
+            color: #ffffff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.agent .bubble {
+            background: #0f172a;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 2px;
+        }
+
+        .agent-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.35rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .path-chip {
+            background: rgba(168, 85, 247, 0.15);
+            color: var(--accent-purple);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .chat-input-area {
+            padding: 1rem 1.5rem;
+            background: #0f172a;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.85rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .send-btn {
+            background: var(--accent-blue);
+            color: #0f172a;
+            font-weight: 700;
+            padding: 0.85rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .send-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* GRID CARDS & PANELS */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -110,7 +298,7 @@
         }
 
         .card-title {
-            font-size: 1rem;
+            font-size: 0.875rem;
             color: var(--text-muted);
             font-weight: 600;
             margin-bottom: 0.5rem;
@@ -130,14 +318,6 @@
             margin-top: 0.5rem;
         }
 
-        .config-panel {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-top: 2rem;
-        }
-
         .form-group {
             display: flex;
             flex-direction: column;
@@ -151,7 +331,7 @@
             font-weight: 600;
         }
 
-        input[type="password"], select {
+        input[type="text"], input[type="password"], select, textarea {
             background: #0f172a;
             border: 1px solid var(--border-color);
             color: var(--text-main);
@@ -161,7 +341,7 @@
             width: 100%;
         }
 
-        input[type="password"]:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--accent-blue);
         }
@@ -196,10 +376,22 @@
             border: 1px solid rgba(34, 197, 94, 0.3);
         }
 
-        .msg-error {
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+        .file-list {
+            list-style: none;
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .file-item {
+            background: #0f172a;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         footer {
@@ -213,67 +405,127 @@
 </head>
 <body>
     <header>
-        <div class="logo">
-            ⚡ Asistente Agéntico Edge (RPi 5)
+        <div class="brand">
+            ⚡ Asistente Agéntico Edge (/AssAntigravity)
         </div>
-        <div class="status-badge" id="health-badge">
-            <div class="dot"></div> Sistema En Línea
+
+        <nav class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat Agéntico</button>
+            <button class="tab-btn" onclick="switchTab('config')">⚙️ Failover & Gemini</button>
+            <button class="tab-btn" onclick="switchTab('vault')">📁 Bóveda & RAG</button>
+        </nav>
+
+        <div class="status-badge">
+            <div class="dot"></div> RPi 5 Online
         </div>
     </header>
 
     <main>
-        <h2>Panel de Control del Nodo Principal (/AssAntigravity)</h2>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">Monitoreo de topología distribuida, orquestación y estado de LLMs.</p>
+        <!-- TAB 1: CHAT INTERFACE -->
+        <section id="tab-chat" class="tab-content active">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div>
+                        <strong style="font-size: 1.1rem;">Asistente Agéntico Multiagente</strong>
+                        <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 0.5rem;">LangGraph + Circuit Breaker</span>
+                    </div>
+                    <div class="active-tier-tag" id="active-tier-badge">Detectando LLM Activo...</div>
+                </div>
 
-        <div class="grid">
-            <div class="card">
-                <div class="card-title">Inferencia PC Local (Prioridad 1)</div>
-                <div class="card-value" id="pc-model">qwen3.5:4b</div>
-                <div class="card-desc" id="pc-url">Endpoint: http://192.168.1.50:11434</div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message agent">
+                        <div class="bubble">
+                            ¡Hola! Soy <strong>Antigravity</strong>, tu Asistente Agéntico Edge. Opero en la Raspberry Pi 5 con orquestación LangGraph y tolerancia a fallos en 3 capas. ¿En qué puedo ayudarte hoy?
+                        </div>
+                        <div class="agent-meta">
+                            <span>Sistema Inicializado</span>
+                            <span class="path-chip">Supervisor -> Ready</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" class="chat-input" placeholder="Haz una consulta (ej: '¿Puedes analizar el archivo PDF de informes?', 'Escribe una nota en Obsidian')" onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" onclick="sendMessage()">Enviar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: CONFIGURACIÓN & FAILOVER -->
+        <section id="tab-config" class="tab-content">
+            <h2>Panel de Estado de Modelos y Failover</h2>
+            <p style="color: var(--text-muted); margin-top: 0.25rem;">Monitoreo en tiempo real de la disponibilidad de los 3 niveles de inferencia.</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">Prioridad 1: PC Local LAN</div>
+                    <div class="card-value" id="pc-model-name">qwen3.5:4b</div>
+                    <div class="card-desc" id="pc-status">Verificando http://192.168.1.50:11434...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Prioridad 2: Cloud Gemini API</div>
+                    <div class="card-value" id="gemini-active-model">gemini-2.0-flash</div>
+                    <div class="card-desc" id="gemini-status">Modelos asociados a tu cuenta</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Prioridad 3: Edge Fallback RPi</div>
+                    <div class="card-value" id="rpi-model-name">qwen2.5:1.5b</div>
+                    <div class="card-desc" id="rpi-status">Ollama Local en RPi 5 (Offline)</div>
+                </div>
             </div>
 
-            <div class="card">
-                <div class="card-title">Cloud Fallback (Prioridad 2)</div>
-                <div class="card-value" id="cloud-model">gemini-2.0-flash</div>
-                <div class="card-desc">Selección Dinámica de Modelo por Cuenta</div>
+            <div class="card" style="margin-top: 2rem;">
+                <h3>🔑 Gestión de Gemini API Key y Selección de Modelo</h3>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
+                    Las credenciales se guardan de forma protegida en <code>/AssAntigravity/dbs/credentials.json</code>.
+                </p>
+
+                <div class="form-group">
+                    <label for="gemini-key-input">Ingresar Gemini API Key:</label>
+                    <input type="password" id="gemini-key-input" placeholder="AIzaSy... (Ingresa tu clave de Google AI Studio)">
+                </div>
+                <button class="btn" onclick="saveGeminiKey()">Guardar API Key y Consultar Modelos</button>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label for="gemini-model-select">Modelos Disponibles para tu Cuenta:</label>
+                    <select id="gemini-model-select" onchange="onModelSelected()">
+                        <option value="">Ingresa una API Key válida para cargar modelos...</option>
+                    </select>
+                </div>
+                <div class="msg-box" id="msg-box"></div>
             </div>
+        </section>
 
-            <div class="card">
-                <div class="card-title">Edge Fallback RPi (Prioridad 3)</div>
-                <div class="card-value" id="rpi-model">qwen2.5:1.5b</div>
-                <div class="card-desc">Inferencia aislada 100% offline</div>
+        <!-- TAB 3: BÓVEDA & RECURSOS -->
+        <section id="tab-vault" class="tab-content">
+            <h2>Gestión de Recursos Locales (/AssAntigravity/data)</h2>
+            <p style="color: var(--text-muted); margin-top: 0.25rem;">Explora los archivos de la bóveda de Obsidian, PDFs del RAG y hojas financieras.</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">Bóveda Obsidian (/data/obsidian)</div>
+                    <ul class="file-list" id="obsidian-list">
+                        <li class="file-item">Cargando notas...</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">PDFs Ingesta RAG (/data/pdfs)</div>
+                    <ul class="file-list" id="pdf-list">
+                        <li class="file-item">Cargando PDFs...</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Archivos de Finanzas (/data/finanzas)</div>
+                    <ul class="file-list" id="finance-list">
+                        <li class="file-item">Cargando hojas de cálculo...</li>
+                    </ul>
+                </div>
             </div>
-
-            <div class="card">
-                <div class="card-title">Vector Database</div>
-                <div class="card-value">Qdrant Engine</div>
-                <div class="card-desc">Puerto: 6333 | Binario Nativo ARM64</div>
-            </div>
-        </div>
-
-        <!-- PANEL DE CONFIGURACIÓN DE GEMINI API -->
-        <div class="config-panel">
-            <h3>🔑 Configuración de Gemini API y Selección de Modelo</h3>
-            <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
-                Las credenciales se almacenan de forma segura en <code>/AssAntigravity/dbs/credentials.json</code> con permisos estrictos (chmod 600) y fuera del control de versiones.
-            </p>
-
-            <div class="form-group">
-                <label for="gemini-key-input">Gemini API Key:</label>
-                <input type="password" id="gemini-key-input" placeholder="AIzaSy... (Ingresa tu clave privada)">
-            </div>
-
-            <button class="btn" onclick="saveGeminiKey()">Guardar API Key y Consultar Modelos</button>
-
-            <div class="form-group" style="margin-top: 1.5rem;">
-                <label for="gemini-model-select">Modelos Disponibles para tu Cuenta:</label>
-                <select id="gemini-model-select" onchange="onModelSelected()">
-                    <option value="">Cargando modelos asociados...</option>
-                </select>
-            </div>
-
-            <div class="msg-box" id="msg-box"></div>
-        </div>
+        </section>
     </main>
 
     <footer>
@@ -281,55 +533,158 @@
     </footer>
 
     <script>
-        function showMsg(text, isSuccess = true) {
-            const box = document.getElementById('msg-box');
-            box.textContent = text;
-            box.className = `msg-box ${isSuccess ? 'msg-success' : 'msg-error'}`;
-            box.style.display = 'block';
-            setTimeout(() => { box.style.display = 'none'; }, 5000);
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
         }
 
-        async function fetchGeminiConfig() {
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const messageText = input.value.trim();
+            if (!messageText) return;
+
+            const messagesContainer = document.getElementById('chat-messages');
+
+            // Agregar mensaje del usuario
+            const userDiv = document.createElement('div');
+            userDiv.className = 'message user';
+            userDiv.innerHTML = `<div class="bubble">${escapeHtml(messageText)}</div>`;
+            messagesContainer.appendChild(userDiv);
+            input.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Indicador de carga del agente
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message agent';
+            loadingDiv.id = 'loading-msg';
+            loadingDiv.innerHTML = `<div class="bubble" style="color: var(--text-muted);">⏳ Antigravity está consultando herramientas y sintetizando respuesta...</div>`;
+            messagesContainer.appendChild(loadingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
             try {
-                const res = await fetch('/api/gemini/config');
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: messageText })
+                });
+
+                document.getElementById('loading-msg')?.remove();
+
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.active_model) {
-                        document.getElementById('cloud-model').textContent = data.active_model;
-                    }
-                    populateModelsDropdown(data.available_models, data.active_model);
+                    const agentDiv = document.createElement('div');
+                    agentDiv.className = 'message agent';
+                    
+                    const pathChips = (data.agent_path || []).map(p => `<span class="path-chip">${escapeHtml(p)}</span>`).join(' ');
+
+                    agentDiv.innerHTML = `
+                        <div class="bubble">${formatMarkdown(data.response)}</div>
+                        <div class="agent-meta">
+                            <span>⚡ ${escapeHtml(data.active_tier)} (${escapeHtml(data.active_model)})</span>
+                            <span>⏱️ ${data.latency_ms} ms</span>
+                            <div>${pathChips}</div>
+                        </div>
+                    `;
+                    messagesContainer.appendChild(agentDiv);
+                    document.getElementById('active-tier-badge').textContent = `${data.active_tier} (${data.active_model})`;
+                } else {
+                    showAgentErrorMessage("Error al obtener respuesta del servidor agéntico.");
                 }
             } catch (err) {
-                console.warn('Error al obtener configuración de Gemini:', err);
+                document.getElementById('loading-msg')?.remove();
+                showAgentErrorMessage("Error de conexión con el backend FastAPI.");
+            }
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showAgentErrorMessage(msg) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const errDiv = document.createElement('div');
+            errDiv.className = 'message agent';
+            errDiv.innerHTML = `<div class="bubble" style="border-color: #ef4444; color: #ef4444;">❌ ${msg}</div>`;
+            messagesContainer.appendChild(errDiv);
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function formatMarkdown(text) {
+            return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        }
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/system/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    // PC Tier 1
+                    document.getElementById('pc-model-name').textContent = data.tier1_pc.model;
+                    document.getElementById('pc-status').textContent = data.tier1_pc.available 
+                        ? `🟢 Disponible (${data.tier1_pc.latency_ms} ms)` 
+                        : `🔴 Inalcanzable (Timeout 1.5s)`;
+
+                    // Gemini Tier 2
+                    document.getElementById('gemini-active-model').textContent = data.tier2_cloud.model;
+                    document.getElementById('gemini-status').textContent = data.tier2_cloud.available 
+                        ? `🟢 API Key Configurada` 
+                        : `🟡 Clave no provista (Usará fallback RPi)`;
+
+                    // RPi Tier 3
+                    document.getElementById('rpi-model-name').textContent = data.tier3_rpi.model;
+                    document.getElementById('rpi-status').textContent = data.tier3_rpi.available 
+                        ? `🟢 Ollama Local Activo` 
+                        : `🟡 Standby / Inalcanzable`;
+
+                    // Badge Header
+                    document.getElementById('active-tier-badge').textContent = `Activo: ${data.active_provider.tier} (${data.active_provider.model})`;
+                }
+            } catch (err) {
+                console.warn('Error fetching system status:', err);
             }
         }
 
-        function populateModelsDropdown(models, activeModel) {
-            const select = document.getElementById('gemini-model-select');
-            select.innerHTML = '';
-
-            if (!models || models.length === 0) {
-                select.innerHTML = '<option value="">No hay modelos cargados. Ingresa una API Key válida.</option>';
-                return;
-            }
-
-            models.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.id;
-                opt.textContent = `${m.displayName} (${m.id})`;
-                if (m.id === activeModel) {
-                    opt.selected = true;
+        async function fetchVaultResources() {
+            try {
+                // Obsidian Notes
+                const obsRes = await fetch('/api/tools/obsidian/notes');
+                if (obsRes.ok) {
+                    const data = await obsRes.json();
+                    const list = document.getElementById('obsidian-list');
+                    list.innerHTML = data.notes.length ? data.notes.map(n => `<li class="file-item">📝 ${escapeHtml(n)}</li>`).join('') : '<li class="file-item">Bóveda vacía</li>';
                 }
-                select.appendChild(opt);
-            });
+
+                // PDFs RAG
+                const pdfRes = await fetch('/api/tools/pdfs');
+                if (pdfRes.ok) {
+                    const data = await pdfRes.json();
+                    const list = document.getElementById('pdf-list');
+                    list.innerHTML = data.files.length ? data.files.map(f => `<li class="file-item">📄 ${escapeHtml(f)}</li>`).join('') : '<li class="file-item">Sin documentos PDF</li>';
+                }
+
+                // Finanzas
+                const finRes = await fetch('/api/tools/finance/files');
+                if (finRes.ok) {
+                    const data = await finRes.json();
+                    const list = document.getElementById('finance-list');
+                    list.innerHTML = data.files.length ? data.files.map(f => `<li class="file-item">📊 ${escapeHtml(f)}</li>`).join('') : '<li class="file-item">Sin archivos financieros</li>';
+                }
+            } catch (err) {
+                console.warn('Error fetching vault resources:', err);
+            }
         }
 
         async function saveGeminiKey() {
             const keyInput = document.getElementById('gemini-key-input').value.trim();
-            if (!keyInput) {
-                showMsg('Por favor ingresa una API Key válida.', false);
-                return;
-            }
+            if (!keyInput) return;
 
             try {
                 const res = await fetch('/api/gemini/key', {
@@ -338,42 +693,36 @@
                     body: JSON.stringify({ api_key: keyInput })
                 });
 
-                const data = await res.json();
-                if (res.ok) {
-                    showMsg('✅ API Key validada y almacenada de forma segura.');
-                    document.getElementById('gemini-key-input').value = '';
-                    document.getElementById('cloud-model').textContent = data.active_model;
-                    populateModelsDropdown(data.available_models, data.active_model);
-                } else {
-                    showMsg(`❌ Error: ${data.detail || 'API Key inválida'}`, false);
-                }
-            } catch (err) {
-                showMsg('Error de red al conectar con el servidor backend.', false);
-            }
-        }
-
-        async function onModelSelected() {
-            const selectedModel = document.getElementById('gemini-model-select').value;
-            if (!selectedModel) return;
-
-            try {
-                const res = await fetch('/api/gemini/select-model', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ model: selectedModel })
-                });
-
                 if (res.ok) {
                     const data = await res.json();
-                    document.getElementById('cloud-model').textContent = data.active_model;
-                    showMsg(`✅ Modelo de Gemini cambiado a '${data.active_model}'.`);
+                    document.getElementById('gemini-key-input').value = '';
+                    populateModelsDropdown(data.available_models, data.active_model);
+                    fetchStatus();
                 }
             } catch (err) {
-                showMsg('Error al actualizar el modelo seleccionado.', false);
+                console.error(err);
             }
         }
 
-        fetchGeminiConfig();
+        function populateModelsDropdown(models, activeModel) {
+            const select = document.getElementById('gemini-model-select');
+            select.innerHTML = '';
+            if (!models || models.length === 0) {
+                select.innerHTML = '<option value="">Sin modelos disponibles</option>';
+                return;
+            }
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.displayName} (${m.id})`;
+                if (m.id === activeModel) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        fetchStatus();
+        fetchVaultResources();
+        setInterval(fetchStatus, 10000);
     </script>
 </body>
 </html>
