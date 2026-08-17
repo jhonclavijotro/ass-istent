@@ -7,6 +7,7 @@ from app.tools.obsidian_tool import obsidian_manager
 from app.tools.finance_tool import finance_manager
 from app.tools.pdf_watchdog import PDFS_DIR, pdf_watchdog_service
 from app.tools.google_workspace import google_workspace_manager
+from app.tools.filesystem_tool import filesystem_manager
 
 router = APIRouter(prefix="/api/tools", tags=["Tools & Integrations"])
 
@@ -20,6 +21,18 @@ class AddFinanceRecordRequest(BaseModel):
     concepto: str
     monto: float
     categoria: Optional[str] = "General"
+
+class CreateFileRequest(BaseModel):
+    path: str
+    content: str
+
+class ModifyFileRequest(BaseModel):
+    path: str
+    content: str
+    append: Optional[bool] = True
+
+class DeleteFileRequest(BaseModel):
+    path: str
 
 @router.get("/obsidian/notes")
 def list_obsidian_notes():
@@ -71,7 +84,6 @@ async def upload_pdf_to_rag(file: UploadFile = File(...)):
         with open(target_path, "wb") as f:
             f.write(contents)
             
-        # Indexar automáticamente el PDF subido
         pdf_watchdog_service.indexer.process_pdf(target_path)
         
         return {
@@ -81,6 +93,36 @@ async def upload_pdf_to_rag(file: UploadFile = File(...)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al guardar el archivo PDF: {str(e)}")
+
+@router.get("/file/list")
+def list_rpi_files(subfolder: Optional[str] = ""):
+    """Lista archivos en el sistema de almacenamiento de la RPi 5 (/app/data)"""
+    files = filesystem_manager.list_files(subfolder)
+    return {"base_dir": filesystem_manager.base_dir, "count": len(files), "files": files}
+
+@router.post("/file/create")
+def create_rpi_file(request: CreateFileRequest):
+    """Crea un nuevo archivo en el sistema de la RPi 5"""
+    ok = filesystem_manager.create_file(request.path, request.content)
+    if not ok:
+        raise HTTPException(status_code=500, detail=f"Error al crear archivo '{request.path}'.")
+    return {"status": "success", "path": request.path}
+
+@router.post("/file/modify")
+def modify_rpi_file(request: ModifyFileRequest):
+    """Modifica o anexa contenido a un archivo en la RPi 5"""
+    ok = filesystem_manager.modify_file(request.path, request.content, request.append)
+    if not ok:
+        raise HTTPException(status_code=500, detail=f"Error al modificar archivo '{request.path}'.")
+    return {"status": "success", "path": request.path}
+
+@router.post("/file/delete")
+def delete_rpi_file(request: DeleteFileRequest):
+    """Elimina físicamente un archivo o carpeta en la RPi 5"""
+    ok = filesystem_manager.delete_file(request.path)
+    if not ok:
+        raise HTTPException(status_code=500, detail=f"Error al eliminar archivo '{request.path}'.")
+    return {"status": "success", "path": request.path}
 
 @router.get("/finance/files")
 def list_finance_files():
@@ -98,8 +140,5 @@ def add_finance_record(request: AddFinanceRecordRequest):
 
 @router.get("/google/status")
 def google_status():
-    """Estado de autenticación OAuth2 de Google Workspace"""
-    return {
-        "authenticated": google_workspace_manager.is_authenticated,
-        "tokens_file": google_workspace_manager.tokens_file
-    }
+    """Estado de la integración de Google Workspace"""
+    return google_workspace_manager.get_integration_status()

@@ -13,12 +13,13 @@ from app.agents.nodes import (
     finance_writer_node,
     email_node,
     email_action_node,
+    file_agent,
+    file_action_node,
     writer_node
 )
 
 logger = logging.getLogger("agent_graph")
 
-# Checkpointer persistente en memoria global de la instancia FastAPI
 memory_checkpointer = MemorySaver()
 
 def read_persistent_obsidian_notes() -> str:
@@ -68,6 +69,8 @@ def router_conditional(state: AgentState) -> str:
         return "finance_agent"
     if agent in ["email_node", "email_agent"]:
         return "email_agent"
+    if agent in ["file_agent", "file_node"]:
+        return "file_agent"
     return agent
 
 def build_agent_graph():
@@ -83,6 +86,8 @@ def build_agent_graph():
     workflow.add_node("finance_writer_node", finance_writer_node)
     workflow.add_node("email_agent", email_node)
     workflow.add_node("email_action_node", email_action_node)
+    workflow.add_node("file_agent", file_agent)
+    workflow.add_node("file_action_node", file_action_node)
     workflow.add_node("writer_agent", writer_node)
     
     # Punto de entrada principal
@@ -100,11 +105,13 @@ def build_agent_graph():
             "finance_writer_node": "finance_writer_node",
             "email_agent": "email_agent",
             "email_action_node": "email_action_node",
+            "file_agent": "file_agent",
+            "file_action_node": "file_action_node",
             "writer_agent": "writer_agent"
         }
     )
     
-    # Conexiones hacia los nodos de escritura o directamente al redactor
+    # Conexiones hacia los nodos de escritura/acción o directamente al redactor
     workflow.add_edge("research_agent", "writer_agent")
     
     workflow.add_edge("obsidian_agent", "obsidian_writer_node")
@@ -115,6 +122,9 @@ def build_agent_graph():
     
     workflow.add_edge("email_agent", "email_action_node")
     workflow.add_edge("email_action_node", "writer_agent")
+
+    workflow.add_edge("file_agent", "file_action_node")
+    workflow.add_edge("file_action_node", "writer_agent")
     
     # El Redactor finaliza el grafo
     workflow.add_edge("writer_agent", END)
@@ -125,7 +135,8 @@ def build_agent_graph():
         interrupt_before=[
             "obsidian_writer_node",
             "finance_writer_node",
-            "email_action_node"
+            "email_action_node",
+            "file_action_node"
         ]
     )
     return app_graph

@@ -3,6 +3,7 @@ from typing import Dict, Any
 from app.agents.state import AgentState, PendingAction
 from app.core.llm_router import llm_router
 from app.tools.obsidian_tool import obsidian_manager
+from app.tools.filesystem_tool import filesystem_manager
 
 async def supervisor_node(state: AgentState) -> AgentState:
     """Nodo Supervisor: Enruta la consulta al agente especialista correspondiente"""
@@ -19,6 +20,8 @@ async def supervisor_node(state: AgentState) -> AgentState:
         state["current_agent"] = "finance_agent"
     elif any(k in query for k in ["correo", "email", "gmail", "agenda", "evento", "calendario"]):
         state["current_agent"] = "email_agent"
+    elif any(k in query for k in ["crear archivo", "eliminar archivo", "borrar archivo", "modificar archivo", "crea un archivo", "borra el archivo", "elimina el archivo", "nuevo archivo"]):
+        state["current_agent"] = "file_agent"
     else:
         state["current_agent"] = "writer_agent"
         
@@ -73,7 +76,6 @@ async def obsidian_writer_node(state: AgentState) -> AgentState:
         filepath = payload.get("path", "Sintesis_Interacciones/Memoria_Usuario.md")
         content = payload.get("content", f"# Memoria\n\n{state.get('user_query')}")
         
-        # Escritura física real en disco mediante obsidian_manager
         ok = obsidian_manager.create_or_update_note(filepath, content, append=True)
         if ok:
             history.append(f"HITL Obsidian: Nota '{filepath}' escrita exitosamente en disco.")
@@ -84,6 +86,82 @@ async def obsidian_writer_node(state: AgentState) -> AgentState:
     elif approval == "REJECTED":
         history.append("HITL Obsidian: Escritura CANCELADA a petición del usuario.")
         state["obsidian_context"] = "❌ La creación de la nota fue cancelada a petición del usuario."
+        
+    state["pending_action"] = None
+    state["agent_history"] = history
+    return state
+
+async def file_agent(state: AgentState) -> AgentState:
+    """Agente Gestor del Sistema de Archivos RPi 5: Genera propuesta de creación/modificación/eliminación de archivos"""
+    history = state.get("agent_history", [])
+    history.append("Gestor de Archivos RPi: Analizando solicitud de manipulación de archivos")
+    
+    query = state["user_query"]
+    q_lower = query.lower()
+    action_id = f"act-file-{uuid.uuid4().hex[:6]}"
+    
+    operation = "create"
+    risk_level = "MEDIUM"
+    desc = "Crear nuevo archivo en la Raspberry Pi 5"
+    
+    if any(k in q_lower for k in ["eliminar", "borrar", "delete", "remove"]):
+        operation = "delete"
+        risk_level = "HIGH"
+        desc = "ELIMINAR FÍSICAMENTE un archivo en el sistema de almacenamiento de la Raspberry Pi 5"
+    elif any(k in q_lower for k in ["modificar", "editar", "actualizar", "append", "anexar"]):
+        operation = "modify"
+        risk_level = "MEDIUM"
+        desc = "Modificar contenido de un archivo en la Raspberry Pi 5"
+
+    pending: PendingAction = {
+        "action_id": action_id,
+        "agent_name": "Gestor del Sistema de Archivos (RPi 5)",
+        "tool_name": f"{operation}_file",
+        "description": f"{desc}: Se procesará sobre el directorio /app/data.",
+        "payload": {
+            "operation": operation,
+            "path": "archivos_usuario/Nota_Creada.txt" if operation != "delete" else "archivos_usuario/archivo_eliminar.txt",
+            "content": f"Contenido generado por el Asistente Antigravity: {query}" if operation != "delete" else ""
+        },
+        "risk_level": risk_level
+    }
+    
+    state["pending_action"] = pending
+    state["user_approval_status"] = "PENDING"
+    state["obsidian_context"] = f"Propuesta de operación de archivo '{operation}' registrada (Pendiente de aprobación HITL)."
+    state["current_agent"] = "file_action_node"
+    state["agent_history"] = history
+    return state
+
+async def file_action_node(state: AgentState) -> AgentState:
+    """Nodo HITL: Ejecuta físicamente la operación sobre el archivo ÚNICAMENTE si fue aprobado"""
+    history = state.get("agent_history", [])
+    approval = state.get("user_approval_status")
+    pending = state.get("pending_action")
+    
+    if approval == "APPROVED" and pending and pending.get("payload"):
+        payload = pending["payload"]
+        op = payload.get("operation", "create")
+        path = payload.get("path", "archivos_usuario/nota.txt")
+        content = payload.get("content", "")
+        
+        ok = False
+        if op == "create":
+            ok = filesystem_manager.create_file(path, content)
+        elif op == "modify":
+            ok = filesystem_manager.modify_file(path, content, append=True)
+        elif op == "delete":
+            ok = filesystem_manager.delete_file(path)
+            
+        if ok:
+            history.append(f"HITL Archivos: Operación '{op}' ejecutada exitosamente sobre '{path}'.")
+            state["obsidian_context"] = f"✅ Operación de archivo '{op}' ejecutada físicamente sobre '{path}' en la RPi 5."
+        else:
+            history.append(f"HITL Archivos: Error al ejecutar '{op}' sobre '{path}'.")
+            state["obsidian_context"] = f"❌ Error al ejecutar operación de archivo '{op}' en disco."
+    elif approval == "REJECTED":
+        history.append("HITL Archivos: Operación de archivo CANCELADA a petición del usuario.")
+        state["obsidian_context"] = "❌ La operación sobre el sistema de archivos fue cancelada a petición del usuario."
         
     state["pending_action"] = None
     state["agent_history"] = history
