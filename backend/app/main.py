@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from app.routers import chat, gemini
+from app.routers import chat, gemini, tools
 
 app = FastAPI(
     title="Asistente Agéntico Edge API",
@@ -20,9 +20,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Incluir rutas de chat y orquestación agéntica
+# Incluir rutas de chat, gemini y herramientas agénticas
 app.include_router(chat.router)
 app.include_router(gemini.router)
+app.include_router(tools.router)
 
 class HealthStatus(BaseModel):
     status: str

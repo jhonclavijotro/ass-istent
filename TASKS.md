@@ -11,7 +11,7 @@
 - [x] **FASE 1: ESPECIFICACIÓN Y ARQUITECTURA EDGE (Spec)**
 - [x] **FASE 2: INFRAESTRUCTURA DOCKER EN RASPBERRY PI 5**
 - [x] **FASE 3: MOTOR MULTIAGENTE Y SISTEMA DE FAILOVER (LangGraph)**
-- [ ] **FASE 4: HERRAMIENTAS, INTEGRACIÓN Y SINCRONIZACIÓN DE RECURSOS**
+- [x] **FASE 4: HERRAMIENTAS, INTEGRACIÓN Y SINCRONIZACIÓN DE RECURSOS**
 - [ ] **FASE 5: INTERFAZ WEB (UI) Y PANEL DE CONTROL EDGE**
 
 ---
@@ -74,16 +74,16 @@
 ### FASE 4: HERRAMIENTAS, INTEGRACIÓN Y SINCRONIZACIÓN DE RECURSOS
 > **Objetivo:** Conectar el backend agéntico con los datos locales (Obsidian, PDFs RAG, Excel) y servicios externos (Google Workspace).
 
-- [ ] **4.1 Sistema RAG y Ingesta de Documentos (PDF Watchdog)**
-  - [ ] Desarrollar servicio de monitoreo de archivos (`watchdog`) para auto-indexar PDFs colocados en la carpeta física de la Pi hacia Qdrant.
-  - [ ] Implementar pipeline de fragmentación (*chunking*) y generación de embeddings (compatibles con ARM64 / Ollama).
-- [ ] **4.2 Integración con Bóveda de Obsidian y Archivos Financieros**
-  - [ ] Crear herramientas de agente para lectura, edición y creación de notas en Obsidian (formato Markdown).
-  - [ ] Crear herramientas de lectura/procesamiento de hojas de cálculo de finanzas (Excel/CSV).
-- [ ] **4.3 Autenticación Google OAuth2 (Workspace)**
-  - [ ] Adaptar flujo de autenticación OAuth2 para integración segura de correo (Gmail) y calendario.
-- [ ] **4.4 Phase-Gate Review 4**
-  - [ ] Presentar flujo completo RAG y manipulación de archivos locales al Director para aprobación.
+- [x] **4.1 Sistema RAG y Ingesta de Documentos (PDF Watchdog)**
+  - [x] Desarrollar servicio de monitoreo de archivos (`watchdog`) para auto-indexar PDFs colocados en `/AssAntigravity/data/pdfs` hacia Qdrant.
+  - [x] Implementar pipeline de fragmentación (*chunking*) y extracción PyMuPDF ultraligera para ARM64.
+- [x] **4.2 Integración con Bóveda de Obsidian y Archivos Financieros**
+  - [x] Crear herramientas de agente para lectura, edición y búsqueda de notas Markdown en `/AssAntigravity/data/obsidian`.
+  - [x] Crear herramientas de lectura/procesamiento de hojas de cálculo de finanzas en `/AssAntigravity/data/finanzas` (CSV/Excel).
+- [x] **4.3 Autenticación Google OAuth2 (Workspace)**
+  - [x] Adaptar flujo de autenticación OAuth2 para integración segura de correo (Gmail) y calendario en `/AssAntigravity/dbs/google_tokens.json`.
+- [x] **4.4 Phase-Gate Review 4**
+  - [x] Presentar flujo completo RAG y manipulación de archivos locales al Director para aprobación.
 
 ---
 
