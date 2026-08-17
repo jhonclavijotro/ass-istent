@@ -68,5 +68,5 @@ $$\text{Petición} \longrightarrow \underbrace{\text{Prioridad 1: PC Local Ollam
 
 1. **Fuente Única de Verdad (Single Source of Truth):** Todo el código, especificaciones técnicas (`.md`), archivos de configuración Docker y manifiestos del proyecto serán versionados en un repositorio de **GitHub**.
 2. **Generación de Código en PC Local:** Todo el desarrollo, refactorización y creación de código se ejecutará localmente en el PC del Director del Proyecto / Entorno Antigravity.
-3. **Despliegue Remoto en Raspberry Pi 5:** La actualización del sistema en el Nodo Principal (RPi 5 en `192.168.1.10`, usuario `jhonclavijotro`) se realizará mediante comandos remotos SSH vía terminal (`git pull` y `docker compose up -d --build`).
+3. **Despliegue Remoto en Raspberry Pi 5:** La actualización del sistema en el Nodo Principal (RPi 5 en `192.168.1.10`, usuario `jhonclavijotro`) se realizará en el directorio raíz `/AssAntigravity` mediante comandos remotos SSH vía terminal (`cd /AssAntigravity && git pull && docker compose up -d --build`).
 4. **Protección de Datos Sensibles:** Ninguna contraseña, token OAuth o clave SSH será subida al repositorio GitHub (`.gitignore` estricto para `.env`, llaves pem/rsa y datos personales).

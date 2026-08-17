@@ -85,9 +85,10 @@ $$\text{Petición Agéntica} \longrightarrow \text{Evaluador de Salud (Circuit B
 2. **Repositorio Central (GitHub):**
    - El código se sube al repositorio remoto de **GitHub**, el cual actúa como la única fuente de verdad (*Single Source of Truth*).
 3. **Despliegue en Raspberry Pi 5 (Terminal SSH):**
-   - Desde la terminal, se establece conexión SSH con la RPi 5:
+   - Desde la terminal, se establece conexión SSH con la RPi 5 y se accede al directorio raíz del proyecto `/AssAntigravity`:
      ```bash
      ssh jhonclavijotro@192.168.1.10
+     cd /AssAntigravity
      ```
    - Se ejecutan los comandos de actualización y despliegue:
      ```bash
@@ -110,11 +111,13 @@ $$\text{Petición Agéntica} \longrightarrow \text{Evaluador de Salud (Circuit B
 
 ## 6. ESTRUCTURA DE VOLÚMENES Y MONTAJE DE ARCHIVOS LOCALES
 
-La Raspberry Pi 5 mantendrá volúmenes montados directamente desde el sistema de archivos del host hacia el contenedor del Backend:
+La Raspberry Pi 5 mantendrá el proyecto centrado en el directorio raíz `/AssAntigravity`, montando sus volúmenes directamente desde allí hacia los contenedores Docker:
 
-- **PDFs Ingesta RAG:** `/home/jhonclavijotro/asistente/data/pdfs` $\rightarrow$ `/app/data/pdfs`
-- **Bóveda Obsidian:** `/home/jhonclavijotro/asistente/data/obsidian` $\rightarrow$ `/app/data/obsidian`
-- **Finanzas:** `/home/jhonclavijotro/asistente/data/finanzas` $\rightarrow$ `/app/data/finanzas`
+- **Directorio Raíz del Asistente en RPi 5:** `/AssAntigravity`
+- **PDFs Ingesta RAG:** `/AssAntigravity/data/pdfs` $\rightarrow$ `/app/data/pdfs`
+- **Bóveda Obsidian:** `/AssAntigravity/data/obsidian` $\rightarrow$ `/app/data/obsidian`
+- **Finanzas:** `/AssAntigravity/data/finanzas` $\rightarrow$ `/app/data/finanzas`
+- **Base de Datos Persistente:** `/AssAntigravity/dbs` $\rightarrow$ `/app/dbs`
 
 Un servicio de monitoreo en tiempo real (`watchdog`) dentro del backend detectará la adición de nuevos PDFs en la carpeta montada e iniciará automáticamente el pipeline de fragmentación e indexación en Qdrant.
 
