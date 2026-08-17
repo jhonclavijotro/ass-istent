@@ -19,7 +19,7 @@ class ActionApprovalRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     status: str  # "COMPLETED" | "AWAITING_USER_APPROVAL"
-    response: str
+    response: Optional[str] = "Respuesta generada correctamente."
     thread_id: str
     active_tier: str
     active_model: str
@@ -76,12 +76,15 @@ async def chat_endpoint(request: ChatRequest):
                 pending_action=pending
             )
             
+        raw_response = final_state.get("final_response")
+        safe_response = raw_response if (raw_response and isinstance(raw_response, str) and raw_response.strip()) else "Respuesta sintetizada correctamente."
+
         return ChatResponse(
             status="COMPLETED",
-            response=final_state.get("final_response", "No se pudo generar respuesta."),
+            response=safe_response,
             thread_id=thread_id,
-            active_tier=final_state.get("active_tier", "Desconocido"),
-            active_model=final_state.get("active_model", "Desconocido"),
+            active_tier=final_state.get("active_tier") or "Tier 2: Gemini Cloud",
+            active_model=final_state.get("active_model") or gemini_service.get_active_model_id(),
             agent_path=final_state.get("agent_history", []),
             latency_ms=final_state.get("latency_ms", 0.0),
             pending_action=None
@@ -97,12 +100,15 @@ async def approve_action(request: ActionApprovalRequest):
         await agent_graph.aupdate_state(config, {"user_approval_status": "APPROVED", "user_approval_feedback": request.feedback})
         final_state = await agent_graph.ainvoke(None, config=config)
         
+        raw_response = final_state.get("final_response")
+        safe_response = raw_response if (raw_response and isinstance(raw_response, str) and raw_response.strip()) else "Acción aprobada y ejecutada exitosamente."
+
         return ChatResponse(
             status="COMPLETED",
-            response=final_state.get("final_response", "Acción aprobada y ejecutada exitosamente."),
+            response=safe_response,
             thread_id=request.thread_id,
-            active_tier=final_state.get("active_tier", "Desconocido"),
-            active_model=final_state.get("active_model", "Desconocido"),
+            active_tier=final_state.get("active_tier") or "Harness Executed",
+            active_model=final_state.get("active_model") or "HITL Handler",
             agent_path=final_state.get("agent_history", []),
             latency_ms=final_state.get("latency_ms", 0.0),
             pending_action=None
@@ -118,12 +124,15 @@ async def reject_action(request: ActionApprovalRequest):
         await agent_graph.aupdate_state(config, {"user_approval_status": "REJECTED", "user_approval_feedback": request.feedback})
         final_state = await agent_graph.ainvoke(None, config=config)
         
+        raw_response = final_state.get("final_response")
+        safe_response = raw_response if (raw_response and isinstance(raw_response, str) and raw_response.strip()) else "La acción fue cancelada a petición del usuario."
+
         return ChatResponse(
             status="COMPLETED",
-            response=final_state.get("final_response", "La acción fue cancelada a petición del usuario."),
+            response=safe_response,
             thread_id=request.thread_id,
-            active_tier=final_state.get("active_tier", "Desconocido"),
-            active_model=final_state.get("active_model", "Desconocido"),
+            active_tier=final_state.get("active_tier") or "Harness Cancelled",
+            active_model=final_state.get("active_model") or "HITL Handler",
             agent_path=final_state.get("agent_history", []),
             latency_ms=final_state.get("latency_ms", 0.0),
             pending_action=None

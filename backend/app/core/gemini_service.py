@@ -17,7 +17,6 @@ def get_credentials_path() -> str:
     os.makedirs(local_dbs, exist_ok=True)
     return os.path.join(local_dbs, "credentials.json")
 
-# Lista de modelos estándar de respaldo para Gemini
 DEFAULT_GEMINI_MODELS = [
     {"id": "gemini-2.0-flash", "displayName": "Gemini 2.0 Flash (Recomendado)", "description": "Rápido y multimodal"},
     {"id": "gemini-1.5-flash", "displayName": "Gemini 1.5 Flash", "description": "Alta velocidad y contexto extenso"},
@@ -148,7 +147,9 @@ class GeminiService:
                     if candidates:
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts:
-                            return parts[0].get("text", "")
+                            txt = parts[0].get("text", "").strip()
+                            if txt:
+                                return txt
                 else:
                     logger.error(f"Gemini API retornó código HTTP {res.status_code}: {res.text}")
         except Exception as e:
