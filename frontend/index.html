@@ -38,7 +38,6 @@
             flex-direction: column;
         }
 
-        /* HEADER & NAVIGATION */
         header {
             background: rgba(30, 41, 59, 0.85);
             backdrop-filter: blur(16px);
@@ -119,7 +118,6 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* MAIN CONTAINER */
         main {
             flex: 1;
             padding: 2rem;
@@ -140,7 +138,7 @@
             display: flex;
         }
 
-        /* TAB 1: CHAT INTERFACE */
+        /* CHAT STYLES */
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -191,13 +189,8 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .message.user {
-            align-self: flex-end;
-        }
-
-        .message.agent {
-            align-self: flex-start;
-        }
+        .message.user { align-self: flex-end; }
+        .message.agent { align-self: flex-start; }
 
         .bubble {
             padding: 1rem 1.25rem;
@@ -255,10 +248,7 @@
             font-size: 0.95rem;
         }
 
-        .chat-input:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-        }
+        .chat-input:focus { outline: none; border-color: var(--accent-blue); }
 
         .send-btn {
             background: var(--accent-blue);
@@ -271,9 +261,7 @@
             transition: opacity 0.2s;
         }
 
-        .send-btn:hover {
-            opacity: 0.9;
-        }
+        .send-btn:hover { opacity: 0.9; }
 
         /* GRID CARDS & PANELS */
         .grid {
@@ -292,10 +280,7 @@
             transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
-        .card:hover {
-            transform: translateY(-2px);
-            border-color: var(--accent-blue);
-        }
+        .card:hover { transform: translateY(-2px); border-color: var(--accent-blue); }
 
         .card-title {
             font-size: 0.875rem;
@@ -306,30 +291,11 @@
             letter-spacing: 0.05em;
         }
 
-        .card-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
+        .card-value { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        .card-desc { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem; }
 
-        .card-desc {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            margin-top: 0.5rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        label {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+        label { font-size: 0.875rem; color: var(--text-muted); font-weight: 600; }
 
         input[type="text"], input[type="password"], select, textarea {
             background: #0f172a;
@@ -341,10 +307,7 @@
             width: 100%;
         }
 
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-blue); }
 
         .btn {
             background: var(--accent-blue);
@@ -356,11 +319,21 @@
             cursor: pointer;
             transition: opacity 0.2s;
             margin-top: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .btn:hover {
-            opacity: 0.9;
+        .btn-small {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            margin-top: 0;
+            border-radius: 6px;
         }
+
+        .btn-green { background: var(--accent-green); color: #0f172a; }
+
+        .btn:hover { opacity: 0.9; }
 
         .msg-box {
             font-size: 0.875rem;
@@ -370,18 +343,15 @@
             display: none;
         }
 
-        .msg-success {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--accent-green);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
+        .msg-success { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); border: 1px solid rgba(34, 197, 94, 0.3); }
+        .msg-error { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
 
         .file-list {
             list-style: none;
             margin-top: 1rem;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
 
         .file-item {
@@ -392,6 +362,53 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .file-actions { display: flex; gap: 0.5rem; }
+
+        /* MODAL DE VISUALIZACIÓN DE NOTAS */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            background: #0f172a;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            background: #090d16;
+            color: #e2e8f0;
         }
 
         footer {
@@ -479,19 +496,22 @@
             <div class="card" style="margin-top: 2rem;">
                 <h3>🔑 Gestión de Gemini API Key y Selección de Modelo</h3>
                 <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
-                    Las credenciales se guardan de forma protegida en <code>/AssAntigravity/dbs/credentials.json</code>.
+                    Al ingresar tu clave, podrás seleccionar cualquiera de los modelos asociados a tu cuenta de Google AI Studio desde el menú desplegable.
                 </p>
 
                 <div class="form-group">
                     <label for="gemini-key-input">Ingresar Gemini API Key:</label>
                     <input type="password" id="gemini-key-input" placeholder="AIzaSy... (Ingresa tu clave de Google AI Studio)">
                 </div>
-                <button class="btn" onclick="saveGeminiKey()">Guardar API Key y Consultar Modelos</button>
+                <button class="btn" onclick="saveGeminiKey()">Guardar API Key y Cargar Modelos</button>
 
                 <div class="form-group" style="margin-top: 1.5rem;">
-                    <label for="gemini-model-select">Modelos Disponibles para tu Cuenta:</label>
+                    <label for="gemini-model-select">Seleccionar Modelo Activo de Gemini:</label>
                     <select id="gemini-model-select" onchange="onModelSelected()">
-                        <option value="">Ingresa una API Key válida para cargar modelos...</option>
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recomendado)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
                     </select>
                 </div>
                 <div class="msg-box" id="msg-box"></div>
@@ -501,25 +521,32 @@
         <!-- TAB 3: BÓVEDA & RECURSOS -->
         <section id="tab-vault" class="tab-content">
             <h2>Gestión de Recursos Locales (/AssAntigravity/data)</h2>
-            <p style="color: var(--text-muted); margin-top: 0.25rem;">Explora los archivos de la bóveda de Obsidian, PDFs del RAG y hojas financieras.</p>
+            <p style="color: var(--text-muted); margin-top: 0.25rem;">Carga PDFs al RAG e inspecciona o descarga tus notas de Obsidian directamente a tu PC.</p>
 
+            <!-- SECCIÓN 1: CARGAR PDF AL RAG -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3>📄 Cargar PDF al RAG (Ingesta Semántica Automática)</h3>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
+                    Los archivos PDF subidos son procesados, fragmentados e indexados automáticamente en Qdrant. No se requiere visualización de los archivos procesados.
+                </p>
+                <div class="form-group" style="flex-direction: row; gap: 1rem; align-items: center; margin-top: 1rem;">
+                    <input type="file" id="pdf-file-input" accept=".pdf" style="flex: 1;">
+                    <button class="btn btn-green" onclick="uploadPDFToRAG()" style="margin-top: 0;">📤 Subir e Indexar en RAG</button>
+                </div>
+                <div class="msg-box" id="rag-msg-box"></div>
+            </div>
+
+            <!-- SECCIÓN 2: BÓVEDA DE OBSIDIAN -->
             <div class="grid">
-                <div class="card">
-                    <div class="card-title">Bóveda Obsidian (/data/obsidian)</div>
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-title">Bóveda de Obsidian (/data/obsidian) - Ver y Descargar al PC</div>
                     <ul class="file-list" id="obsidian-list">
-                        <li class="file-item">Cargando notas...</li>
+                        <li class="file-item">Cargando notas de la bóveda...</li>
                     </ul>
                 </div>
 
                 <div class="card">
-                    <div class="card-title">PDFs Ingesta RAG (/data/pdfs)</div>
-                    <ul class="file-list" id="pdf-list">
-                        <li class="file-item">Cargando PDFs...</li>
-                    </ul>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">Archivos de Finanzas (/data/finanzas)</div>
+                    <div class="card-title">Archivos Financieros (/data/finanzas)</div>
                     <ul class="file-list" id="finance-list">
                         <li class="file-item">Cargando hojas de cálculo...</li>
                     </ul>
@@ -527,6 +554,17 @@
             </div>
         </section>
     </main>
+
+    <!-- MODAL DE VISUALIZACIÓN DE NOTAS -->
+    <div class="modal-overlay" id="note-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong id="modal-note-title" style="font-size: 1.1rem; color: var(--accent-blue);">Nota</strong>
+                <button class="btn btn-small" onclick="closeNoteModal()" style="margin-top: 0; background: #334155; color: white;">✕ Cerrar</button>
+            </div>
+            <div class="modal-body" id="modal-note-body">Cargando...</div>
+        </div>
+    </div>
 
     <footer>
         Asistente Agéntico Edge Distribuido &copy; 2026 | Desplegado en Raspberry Pi 5 ARM64
@@ -545,6 +583,15 @@
             if (e.key === 'Enter') sendMessage();
         }
 
+        function showMsg(text, isSuccess = true, elementId = 'msg-box') {
+            const box = document.getElementById(elementId);
+            if (!box) return;
+            box.textContent = text;
+            box.className = `msg-box ${isSuccess ? 'msg-success' : 'msg-error'}`;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 5000);
+        }
+
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const messageText = input.value.trim();
@@ -552,7 +599,6 @@
 
             const messagesContainer = document.getElementById('chat-messages');
 
-            // Agregar mensaje del usuario
             const userDiv = document.createElement('div');
             userDiv.className = 'message user';
             userDiv.innerHTML = `<div class="bubble">${escapeHtml(messageText)}</div>`;
@@ -560,7 +606,6 @@
             input.value = '';
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            // Indicador de carga del agente
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'message agent';
             loadingDiv.id = 'loading-msg';
@@ -626,25 +671,21 @@
                 if (res.ok) {
                     const data = await res.json();
                     
-                    // PC Tier 1
                     document.getElementById('pc-model-name').textContent = data.tier1_pc.model;
                     document.getElementById('pc-status').textContent = data.tier1_pc.available 
                         ? `🟢 Disponible (${data.tier1_pc.latency_ms} ms)` 
                         : `🔴 Inalcanzable (Timeout 1.5s)`;
 
-                    // Gemini Tier 2
                     document.getElementById('gemini-active-model').textContent = data.tier2_cloud.model;
                     document.getElementById('gemini-status').textContent = data.tier2_cloud.available 
-                        ? `🟢 API Key Configurada` 
+                        ? `🟢 API Key Configurada (${data.tier2_cloud.model})` 
                         : `🟡 Clave no provista (Usará fallback RPi)`;
 
-                    // RPi Tier 3
                     document.getElementById('rpi-model-name').textContent = data.tier3_rpi.model;
                     document.getElementById('rpi-status').textContent = data.tier3_rpi.available 
                         ? `🟢 Ollama Local Activo` 
                         : `🟡 Standby / Inalcanzable`;
 
-                    // Badge Header
                     document.getElementById('active-tier-badge').textContent = `Activo: ${data.active_provider.tier} (${data.active_provider.model})`;
                 }
             } catch (err) {
@@ -652,6 +693,122 @@
             }
         }
 
+        async function fetchGeminiConfig() {
+            try {
+                const res = await fetch('/api/gemini/config');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.active_model) {
+                        document.getElementById('gemini-active-model').textContent = data.active_model;
+                    }
+                    populateModelsDropdown(data.available_models, data.active_model);
+                }
+            } catch (err) {
+                console.warn('Error fetching Gemini config:', err);
+            }
+        }
+
+        function populateModelsDropdown(models, activeModel) {
+            const select = document.getElementById('gemini-model-select');
+            select.innerHTML = '';
+            
+            const list = (models && models.length) ? models : [
+                {id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash"},
+                {id: "gemini-1.5-flash", displayName: "Gemini 1.5 Flash"},
+                {id: "gemini-1.5-pro", displayName: "Gemini 1.5 Pro"},
+                {id: "gemini-2.0-flash-lite", displayName: "Gemini 2.0 Flash Lite"}
+            ];
+
+            list.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.displayName ? `${m.displayName} (${m.id})` : m.id;
+                if (m.id === activeModel) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        async function saveGeminiKey() {
+            const keyInput = document.getElementById('gemini-key-input').value.trim();
+            if (!keyInput) {
+                showMsg('Por favor ingresa una API Key válida.', false);
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/gemini/key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: keyInput })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showMsg('✅ API Key almacenada de forma segura.');
+                    document.getElementById('gemini-key-input').value = '';
+                    document.getElementById('gemini-active-model').textContent = data.active_model;
+                    populateModelsDropdown(data.available_models, data.active_model);
+                    fetchStatus();
+                } else {
+                    showMsg(`❌ Error: ${data.detail || 'API Key inválida'}`, false);
+                }
+            } catch (err) {
+                showMsg('Error de red al conectar con el backend.', false);
+            }
+        }
+
+        async function onModelSelected() {
+            const selectedModel = document.getElementById('gemini-model-select').value;
+            if (!selectedModel) return;
+
+            try {
+                const res = await fetch('/api/gemini/select-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: selectedModel })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('gemini-active-model').textContent = data.active_model;
+                    showMsg(`✅ Modelo de Gemini actualizado a '${data.active_model}'.`);
+                    fetchStatus();
+                }
+            } catch (err) {
+                showMsg('Error al actualizar el modelo seleccionado.', false);
+            }
+        }
+
+        /* SUBIR PDF AL RAG */
+        async function uploadPDFToRAG() {
+            const fileInput = document.getElementById('pdf-file-input');
+            if (!fileInput.files.length) {
+                showMsg('Selecciona un archivo PDF para subir.', false, 'rag-msg-box');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const res = await fetch('/api/tools/rag/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showMsg(`✅ ${data.message}`, true, 'rag-msg-box');
+                    fileInput.value = '';
+                } else {
+                    showMsg(`❌ Error: ${data.detail}`, false, 'rag-msg-box');
+                }
+            } catch (err) {
+                showMsg('Error de red al subir el PDF.', false, 'rag-msg-box');
+            }
+        }
+
+        /* OBSIDIAN: VER Y DESCARGAR NOTAS AL PC */
         async function fetchVaultResources() {
             try {
                 // Obsidian Notes
@@ -659,15 +816,19 @@
                 if (obsRes.ok) {
                     const data = await obsRes.json();
                     const list = document.getElementById('obsidian-list');
-                    list.innerHTML = data.notes.length ? data.notes.map(n => `<li class="file-item">📝 ${escapeHtml(n)}</li>`).join('') : '<li class="file-item">Bóveda vacía</li>';
-                }
-
-                // PDFs RAG
-                const pdfRes = await fetch('/api/tools/pdfs');
-                if (pdfRes.ok) {
-                    const data = await pdfRes.json();
-                    const list = document.getElementById('pdf-list');
-                    list.innerHTML = data.files.length ? data.files.map(f => `<li class="file-item">📄 ${escapeHtml(f)}</li>`).join('') : '<li class="file-item">Sin documentos PDF</li>';
+                    if (data.notes && data.notes.length) {
+                        list.innerHTML = data.notes.map(n => `
+                            <li class="file-item">
+                                <span>📝 ${escapeHtml(n)}</span>
+                                <div class="file-actions">
+                                    <button class="btn btn-small" onclick="viewNote('${escapeHtml(n)}')">👁️ Ver</button>
+                                    <button class="btn btn-small btn-green" onclick="downloadNote('${escapeHtml(n)}')">⬇️ Descargar</button>
+                                </div>
+                            </li>
+                        `).join('');
+                    } else {
+                        list.innerHTML = '<li class="file-item">Sin notas en la bóveda</li>';
+                    }
                 }
 
                 // Finanzas
@@ -682,45 +843,30 @@
             }
         }
 
-        async function saveGeminiKey() {
-            const keyInput = document.getElementById('gemini-key-input').value.trim();
-            if (!keyInput) return;
-
+        async function viewNote(filename) {
             try {
-                const res = await fetch('/api/gemini/key', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: keyInput })
-                });
-
+                const res = await fetch(`/api/tools/obsidian/read?filename=${encodeURIComponent(filename)}`);
                 if (res.ok) {
                     const data = await res.json();
-                    document.getElementById('gemini-key-input').value = '';
-                    populateModelsDropdown(data.available_models, data.active_model);
-                    fetchStatus();
+                    document.getElementById('modal-note-title').textContent = `📝 ${data.filename}`;
+                    document.getElementById('modal-note-body').textContent = data.content;
+                    document.getElementById('note-modal').style.display = 'flex';
                 }
             } catch (err) {
-                console.error(err);
+                alert("Error al cargar el contenido de la nota.");
             }
         }
 
-        function populateModelsDropdown(models, activeModel) {
-            const select = document.getElementById('gemini-model-select');
-            select.innerHTML = '';
-            if (!models || models.length === 0) {
-                select.innerHTML = '<option value="">Sin modelos disponibles</option>';
-                return;
-            }
-            models.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.id;
-                opt.textContent = `${m.displayName} (${m.id})`;
-                if (m.id === activeModel) opt.selected = true;
-                select.appendChild(opt);
-            });
+        function closeNoteModal() {
+            document.getElementById('note-modal').style.display = 'none';
+        }
+
+        function downloadNote(filename) {
+            window.location.href = `/api/tools/obsidian/download?filename=${encodeURIComponent(filename)}`;
         }
 
         fetchStatus();
+        fetchGeminiConfig();
         fetchVaultResources();
         setInterval(fetchStatus, 10000);
     </script>

@@ -94,6 +94,17 @@ class ResilientLLMRouter:
         tier_id, model_name, endpoint = await self.get_active_provider()
         start_time = time.time()
 
+        if tier_id == "tier2_cloud":
+            gemini_res = await gemini_service.generate_content(prompt, system_prompt)
+            if gemini_res:
+                elapsed = round((time.time() - start_time) * 1000, 2)
+                return {
+                    "response": gemini_res,
+                    "tier": "Tier 2: Gemini Cloud",
+                    "model": gemini_service.active_model,
+                    "latency_ms": elapsed
+                }
+
         if tier_id in ["tier1_pc", "tier3_rpi"]:
             url = f"{endpoint}/api/generate"
             payload = {
