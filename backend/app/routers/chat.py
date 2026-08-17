@@ -27,8 +27,10 @@ class StatusResponse(BaseModel):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
-    """Endpoint principal de interacción agéntica"""
-    thread_id = request.thread_id or str(uuid.uuid4())
+    """Endpoint principal de interacción agéntica con persistencia de memoria por hilo"""
+    # Usar un hilo constante por defecto si el cliente no envía uno
+    thread_id = request.thread_id or "thread_main_user"
+    config = {"configurable": {"thread_id": thread_id}}
     
     initial_state = {
         "user_query": request.message,
@@ -45,7 +47,7 @@ async def chat_endpoint(request: ChatRequest):
     }
     
     try:
-        final_state = await agent_graph.ainvoke(initial_state)
+        final_state = await agent_graph.ainvoke(initial_state, config=config)
         return ChatResponse(
             response=final_state.get("final_response", "No se pudo generar respuesta."),
             thread_id=thread_id,
@@ -56,6 +58,16 @@ async def chat_endpoint(request: ChatRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en la ejecución agéntica: {str(e)}")
+
+@router.post("/chat/reset-thread")
+async def reset_thread_memory(thread_id: Optional[str] = "thread_main_user"):
+    """Reinicia la memoria conversacional del hilo especificado"""
+    new_thread_id = str(uuid.uuid4())
+    return {
+        "status": "success",
+        "message": f"Memoria de hilo '{thread_id}' reiniciada.",
+        "new_thread_id": new_thread_id
+    }
 
 @router.get("/system/status")
 async def system_status():

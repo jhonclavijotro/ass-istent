@@ -229,7 +229,6 @@
             align-items: flex-end;
         }
 
-        /* TEXTAREA CON CRECIMIENTO VERTICAL DINÁMICO */
         .chat-input {
             flex: 1;
             background: var(--card-bg);
@@ -366,15 +365,18 @@
                 <div class="chat-header">
                     <div>
                         <strong style="font-size: 1.1rem;">Asistente Agéntico Multiagente</strong>
-                        <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 0.5rem;">LangGraph + Circuit Breaker</span>
+                        <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 0.5rem;">LangGraph + Memoria Persistente</span>
                     </div>
-                    <div class="active-tier-tag" id="active-tier-badge">Detectando LLM Activo...</div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-small" onclick="resetChatThread()" style="background: #334155; color: #f8fafc; font-size: 0.75rem;">🗑️ Reiniciar Memoria</button>
+                        <div class="active-tier-tag" id="active-tier-badge">Detectando LLM Activo...</div>
+                    </div>
                 </div>
 
                 <div class="chat-messages" id="chat-messages">
                     <div class="message agent">
                         <div class="bubble">
-                            ¡Hola! Soy <strong>Antigravity</strong>, tu Asistente Agéntico Edge. Opero en la Raspberry Pi 5 con orquestación LangGraph y tolerancia a fallos en 3 capas. ¿En qué puedo ayudarte hoy?
+                            ¡Hola! Soy <strong>Antigravity</strong>, tu Asistente Agéntico Edge. Mantengo memoria conversacional activa en la Raspberry Pi 5. ¿En qué puedo ayudarte hoy?
                         </div>
                         <div class="agent-meta">
                             <span>Sistema Inicializado</span>
@@ -493,6 +495,10 @@
     </footer>
 
     <script>
+        // HILO PERSISTENTE EN LOCALSTORAGE
+        let currentThreadId = localStorage.getItem('asistente_thread_id') || 'thread_main_user';
+        localStorage.setItem('asistente_thread_id', currentThreadId);
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -501,7 +507,6 @@
             document.getElementById(`tab-${tabId}`).classList.add('active');
         }
 
-        /* AUTO-EXPANSIÓN VERTICAL DEL TEXTAREA DE CHAT */
         function autoExpandTextarea(el) {
             el.style.height = 'auto';
             el.style.height = (el.scrollHeight) + 'px';
@@ -523,6 +528,29 @@
             setTimeout(() => { box.style.display = 'none'; }, 6000);
         }
 
+        async function resetChatThread() {
+            try {
+                const res = await fetch(`/api/chat/reset-thread?thread_id=${encodeURIComponent(currentThreadId)}`, { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    currentThreadId = data.new_thread_id;
+                    localStorage.setItem('asistente_thread_id', currentThreadId);
+                    
+                    const messagesContainer = document.getElementById('chat-messages');
+                    messagesContainer.innerHTML = `
+                        <div class="message agent">
+                            <div class="bubble">
+                                🧹 Memoria conversacional reiniciada. ¡Comencemos una nueva sesión!
+                            </div>
+                        </div>
+                    `;
+                    showMsg('✅ Memoria conversacional reiniciada con éxito.');
+                }
+            } catch (err) {
+                console.error('Error al reiniciar hilo:', err);
+            }
+        }
+
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const messageText = input.value.trim();
@@ -535,7 +563,6 @@
             userDiv.innerHTML = `<div class="bubble">${escapeHtml(messageText)}</div>`;
             messagesContainer.appendChild(userDiv);
             
-            // Limpiar y resetear altura del textarea
             input.value = '';
             input.style.height = 'auto';
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -551,7 +578,7 @@
                 const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: messageText })
+                    body: JSON.stringify({ message: messageText, thread_id: currentThreadId })
                 });
 
                 document.getElementById('loading-msg')?.remove();
@@ -713,7 +740,6 @@
             }
         }
 
-        /* SUBIR PDF AL RAG CON MANEJO DE ERRORES Y LÍMITES NGINX (50MB) */
         async function uploadPDFToRAG() {
             const fileInput = document.getElementById('pdf-file-input');
             if (!fileInput.files.length) {
@@ -746,11 +772,10 @@
                 }
             } catch (err) {
                 console.error("Error al subir PDF:", err);
-                showMsg('❌ Error de red o tamaño excedido al subir el PDF. Verifica que la Nginx permita cargas de 50MB.', false, 'rag-msg-box');
+                showMsg('❌ Error de red o tamaño excedido al subir el PDF.', false, 'rag-msg-box');
             }
         }
 
-        /* OBSIDIAN: VER Y DESCARGAR NOTAS AL PC */
         async function fetchVaultResources() {
             try {
                 // Obsidian Notes
@@ -811,6 +836,7 @@
         fetchGeminiConfig();
         fetchVaultResources();
         setInterval(fetchStatus, 10000);
+        setInterval(fetchVaultResources, 15000);
     </script>
 </body>
 </html>

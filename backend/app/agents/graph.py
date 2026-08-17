@@ -1,6 +1,7 @@
 import os
 import logging
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
 from app.agents.state import AgentState
 from app.agents.nodes import (
     supervisor_node,
@@ -12,12 +13,15 @@ from app.agents.nodes import (
 
 logger = logging.getLogger("agent_graph")
 
+# Instancia global del checkpointer de memoria de LangGraph
+memory_checkpointer = MemorySaver()
+
 def router_conditional(state: AgentState) -> str:
     """Función de enrutamiento condicional basada en la decisión del Supervisor"""
     return state.get("current_agent", "writer_agent")
 
 def build_agent_graph():
-    """Construye e inicializa el grafo agéntico de LangGraph"""
+    """Construye e inicializa el grafo agéntico de LangGraph con Checkpointer de Memoria persistente"""
     workflow = StateGraph(AgentState)
     
     # Agregar Nodos del Grafo
@@ -50,8 +54,8 @@ def build_agent_graph():
     # El Redactor finaliza la ejecución
     workflow.add_edge("writer_agent", END)
     
-    # Compilar el grafo
-    app_graph = workflow.compile()
+    # Compilar el grafo con checkpointer para persistencia de memoria por hilo (thread_id)
+    app_graph = workflow.compile(checkpointer=memory_checkpointer)
     return app_graph
 
 # Instancia global del Grafo Agéntico
