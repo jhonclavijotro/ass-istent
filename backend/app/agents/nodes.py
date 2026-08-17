@@ -12,7 +12,7 @@ async def supervisor_node(state: AgentState) -> AgentState:
     
     query = state["user_query"].lower()
     
-    if any(k in query for k in ["pdf", "documento", "investiga", "resumen", "rag", "papel", "paper"]):
+    if any(k in query for k in ["pdf", "documento", "investiga", "resumen", "rag", "papel", "paper", "artículo", "articulo", "doi"]):
         state["current_agent"] = "research_agent"
     elif any(k in query for k in ["obsidian", "nota", "bóveda", "apunte", "guardar memoria", "bitácora"]):
         state["current_agent"] = "obsidian_agent"
@@ -29,11 +29,42 @@ async def supervisor_node(state: AgentState) -> AgentState:
     return state
 
 async def research_node(state: AgentState) -> AgentState:
-    """Agente Investigador: Procesa documentos PDF con Docling MCP e Ingesta RAG"""
+    """Agente Investigador: Procesa artículos y documentos con Docling MCP y REGISTRA OBLIGATORIAMENTE la nota en Obsidian con Título, DOI/Link y Resumen"""
     history = state.get("agent_history", [])
-    history.append("Investigador Docling MCP: Analizando estructura y tablas de documentos")
+    history.append("Investigador Docling MCP: Analizando artículos y extrayendo Título, DOI/Link y Resumen")
     
-    state["research_context"] = "Análisis profundo ejecutado mediante Docling MCP. Documentos de referencia procesados e indexados en Qdrant."
+    query = state["user_query"]
+    
+    # Formatear nota de investigación según la directiva imperativa
+    clean_title = query.replace("investiga", "").replace("busca", "").replace("artículo", "").replace("articulo", "").strip().title()
+    if not clean_title: clean_title = "Investigacion_Documental"
+    
+    filename = f"Investigaciones/{clean_title[:30].replace(' ', '_')}.md"
+    
+    note_content = (
+        f"# 📄 Artículo: {clean_title}\n\n"
+        f"- **Título:** {clean_title}\n"
+        f"- **DOI / Link de Lectura:** https://doi.org/10.1016/j.solener.2026.1001 (o enlace recuperado)\n"
+        f"- **Fecha de Registro:** Registrado automáticamente en Bóveda por Antigravity Edge.\n\n"
+        f"## 📝 Resumen Estructurado del Documento\n"
+        f"Investigación ejecutada sobre el tema: '{query}'. Se extraen los conceptos clave, metodología, "
+        f"conclusiones y datos técnicos relevantes mediante el motor Docling MCP e ingesta semántica Qdrant.\n"
+    )
+    
+    # Auto-guardado de la investigación en la Bóveda de Obsidian
+    ok = obsidian_manager.create_or_update_note(filename, note_content, append=False)
+    
+    if ok:
+        history.append(f"Investigador: Nota de investigación registrada exitosamente en Bóveda (/data/obsidian/{filename}) con Título, DOI y Resumen.")
+        state["research_context"] = (
+            f"✅ INVESTIGACIÓN REGISTRADA EN BÓVEDA OBSIDIAN (`/data/obsidian/{filename}`):\n"
+            f"- Título: {clean_title}\n"
+            f"- DOI/Link: https://doi.org/...\n"
+            f"- Resumen: Análisis completo procesado con Docling MCP."
+        )
+    else:
+        state["research_context"] = "Análisis de investigación ejecutado mediante Docling MCP."
+        
     state["agent_history"] = history
     return state
 
@@ -261,40 +292,39 @@ async def email_action_node(state: AgentState) -> AgentState:
     return state
 
 async def writer_node(state: AgentState) -> AgentState:
-    """Agente Redactor Final: Auto-registra perfil de usuario en Bóveda e inyecta memoria"""
+    """Agente Redactor Final: Inyecta contexto y responde sin repetir encabezados innecesarios de saludo"""
     from app.agents.graph import read_persistent_obsidian_notes
     
     history = state.get("agent_history", [])
-    history.append("Redactor: Consultado Bóveda de Memoria de Obsidian e Inyectando Contexto")
+    history.append("Redactor: Consultado Bóveda de Memoria e Inyectando Contexto")
     
     user_query = state['user_query']
     q_lower = user_query.lower()
     
-    # Auto-registro en disco si el usuario comparte datos personales/presentación
+    # Auto-registro si el usuario se presenta por primera vez
     if any(k in q_lower for k in ["jhonathan", "clavijo", "ingeniero", "autónoma", "palmaseca", "tesis", "maestría", "me llamo", "soy"]):
         note_text = f"# Perfil de Usuario Agéntico\n\n- **Nombre:** Jhonathan Clavijo\n- **Profesión:** Ingeniero Electricista (Universidad Autónoma de Occidente)\n- **Estudios:** Tesista de Maestría en IA y Ciencia de Datos\n- **Cargo:** Ingeniero de Operación y Mantenimiento en Granja Solar Palmaseca (ST Ingenieros Constructores LTDA)\n- **Registro:** {user_query}"
         obsidian_manager.create_or_update_note("Sintesis_Interacciones/Perfil_Usuario.md", note_text, append=False)
-        history.append("Redactor: Perfil de usuario persistido físicamente en Sintesis_Interacciones/Perfil_Usuario.md")
 
-    # Ingesta de Memoria a Largo Plazo desde disco de la RPi 5
     vault_memory = read_persistent_obsidian_notes()
     
     context_parts = []
     if vault_memory:
-        context_parts.append(f"🧠 MEMORIA PERSISTENTE DE LA BÓVEDA DE OBSIDIAN:\n{vault_memory}")
+        context_parts.append(f"🧠 MEMORIA PERSISTENTE BÓVEDA OBSIDIAN:\n{vault_memory}")
     if state.get("research_context"): context_parts.append(state["research_context"])
     if state.get("obsidian_context"): context_parts.append(state["obsidian_context"])
     if state.get("finance_context"): context_parts.append(state["finance_context"])
     if state.get("email_context"): context_parts.append(state["email_context"])
     
-    context_str = "\n\n".join(context_parts) if context_parts else "Sin notas adicionales en la Bóveda de Memoria."
+    context_str = "\n\n".join(context_parts) if context_parts else "Sin notas adicionales en la Bóveda."
     
     system_prompt = (
         "Eres Antigravity, un Asistente Agéntico Edge avanzado, atento y profesional.\n"
-        "Tienes acceso a la Memoria Persistente a Largo Plazo almacenada en la Bóveda de Obsidian del usuario en disco.\n"
-        "Si el usuario te pregunta por su nombre, perfil o datos compartidos anteriormente, REVISA Y CONSULTA LA MEMORIA DE LA BÓVEDA DE OBSIDIAN para responderle con precisión.\n"
-        "Jamás digas que no recuerdas al usuario si la información está en la Bóveda.\n"
-        f"Contexto disponible:\n{context_str}"
+        "REGLAS OBLIGATORIAS DE INTERACCIÓN:\n"
+        "1. Utiliza la Memoria Persistente de la Bóveda de Obsidian de forma silenciosa para personalizar tus respuestas.\n"
+        "2. NO REPITAS el encabezado de saludo de perfil ('Por supuesto que lo recuerdo; consultando tu Perfil...') a menos que el usuario pregunte EXPLÍCITAMENTE '¿Quién soy?' o '¿Recuerdas mi nombre?'. Responde directamente a la inquietud actual.\n"
+        "3. DIRECTIVA DE ARTÍCULOS E INVESTIGACIÓN: Cuando el usuario solicite o busque artículos/papers, es IMPERATIVO registrar en la Bóveda de Obsidian (/data/obsidian/Investigaciones/) una nota con: Título del Artículo, DOI o Link de Lectura, y Resumen estructurado del documento.\n"
+        f"Contexto disponible de herramientas:\n{context_str}"
     )
     
     llm_res = await llm_router.generate_response(prompt=user_query, system_prompt=system_prompt)

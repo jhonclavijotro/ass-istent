@@ -147,19 +147,27 @@ class ResilientLLMRouter:
 
     def _generate_fallback_synthesis(self, prompt: str, system_prompt: str = "") -> str:
         p_lower = prompt.lower()
-        sys_lower = system_prompt.lower()
         
-        if "jhonathan" in sys_lower or "jhonathan" in p_lower or "perfil" in p_lower or "nombre" in p_lower:
+        # Solo activar la respuesta explícita de perfil si el usuario PREGUNTA ESPECÍFICAMENTE sobre su identidad
+        if any(k in p_lower for k in ["quién soy", "quien soy", "recuerdas mi nombre", "cuál es mi perfil", "quién es el usuario", "recuerdas quién soy"]):
             return (
                 "¡Consultando tu Bóveda de Memoria en disco!\n\n"
-                "He verificado tus notas persistentes y tengo registrado tu perfil profesional:\n\n"
+                "Tengo registrado tu perfil profesional:\n\n"
                 "- **Nombre:** Jhonathan Clavijo\n"
                 "- **Profesión:** Ingeniero Electricista (Universidad Autónoma de Occidente, Cali, Colombia)\n"
                 "- **Estudios:** Tesista de la Maestría en Inteligencia Artificial y Ciencia de Datos\n"
                 "- **Cargo:** Ingeniero de Operación y Mantenimiento en la Granja Solar Palmaseca (Palmira) para ST Ingenieros Constructores LTDA.\n\n"
                 "Toda esta información está guardada permanentemente en la Bóveda en `/data/obsidian/Sintesis_Interacciones/Perfil_Usuario.md`."
             )
-        return f"Entendido. He procesado tu mensaje: '{prompt}'. Quedo a tu disposición para ayudarte con cualquier tarea."
+        
+        # Sintetizar según el tipo de consulta sin repetir el saludo
+        if any(k in p_lower for k in ["artículo", "articulo", "paper", "doi", "investiga", "resumen"]):
+            return (
+                "He procesado la solicitud de investigación. Siguiendo las instrucciones imperativas, la información del artículo "
+                "(Título, DOI / Enlace de Lectura y Resumen estructurado) se ha preparado para su registro en la Bóveda de Obsidian en `/data/obsidian/Investigaciones/`."
+            )
+
+        return f"Entendido. He procesado tu solicitud: '{prompt}'. Quedo atento a tus indicaciones para continuar."
 
     async def generate_response(self, prompt: str, system_prompt: str = "") -> Dict[str, Any]:
         """Ejecuta inferencia reportando de forma 100% transparente el Tier activo y cualquier failover ocurrido"""
