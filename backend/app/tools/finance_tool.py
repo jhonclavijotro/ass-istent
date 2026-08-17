@@ -2,141 +2,199 @@ import os
 import csv
 import logging
 from typing import List, Dict, Any, Optional
+from collections import Counter
 
 logger = logging.getLogger("finance_tool")
 
 FINANZAS_DIR = "/app/data/finanzas" if os.path.exists("/app/data/finanzas") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "finanzas"))
+FINANZAS_CSV = os.path.join(FINANZAS_DIR, "finanzas_db.csv")
 
-class FinanceManager:
+VALID_CUENTAS = ["BLB", "BDV"]
+VALID_TIPOS = ["ingreso", "egreso"]
+VALID_CATEGORIAS = ["comida", "ocio", "casa", "trabajo", "transporte", "otros"]
+
+INITIAL_SEED_RECORDS = [
+    {
+        "fecha": "14/08/2026",
+        "concepto": "Pago de quincena",
+        "monto": "2070000.00",
+        "cuenta": "BDV",
+        "tipo": "ingreso",
+        "categoria": "trabajo"
+    },
+    {
+        "fecha": "14/08/2026",
+        "concepto": "Pago por insumos de la granja",
+        "monto": "300000.00",
+        "cuenta": "BDV",
+        "tipo": "egreso",
+        "categoria": "trabajo"
+    }
+]
+
+class StructuredFinanceManager:
     def __init__(self, dir_path: str = FINANZAS_DIR):
         self.dir_path = dir_path
         os.makedirs(self.dir_path, exist_ok=True)
+        self.db_path = os.path.join(self.dir_path, "finanzas_db.csv")
+        self._ensure_seed_data()
 
-    def list_financial_files(self) -> List[str]:
-        """Lista todos los archivos de finanzas (.csv, .xlsx) en el directorio"""
-        files = []
-        if os.path.exists(self.dir_path):
-            files = [f for f in os.listdir(self.dir_path) if f.endswith(".csv") or f.endswith(".xlsx")]
-        return files
+    def _ensure_seed_data(self):
+        """Inicializa la base de datos CSV con los registros iniciales obligatorios si no existe"""
+        if not os.path.exists(self.db_path) or os.path.getsize(self.db_path) == 0:
+            try:
+                with open(self.db_path, "w", newline="", encoding="utf-8") as f:
+                    fieldnames = ["fecha", "concepto", "monto", "cuenta", "tipo", "categoria"]
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    for rec in INITIAL_SEED_RECORDS:
+                        writer.writerow(rec)
+                logger.info("Base de datos financiera inicializada con registros iniciales por defecto.")
+            except Exception as e:
+                logger.error(f"Error al inicializar semillas en finanzas_db.csv: {e}")
 
-    def read_csv_summary(self, filename: str) -> Dict[str, Any]:
-        """Lee y genera un resumen cuantitativo de un archivo CSV financiero"""
-        if not filename.endswith(".csv"):
-            filename += ".csv"
-        file_path = os.path.join(self.dir_path, filename)
-        if not os.path.exists(file_path):
-            return {"error": f"Archivo '{filename}' no encontrado."}
-
-        rows = []
-        total_monto = 0.0
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                headers = reader.fieldnames or []
-                for row in reader:
-                    rows.append(row)
-                    for col in ["monto", "valor", "precio", "amount"]:
-                        if col in row and row[col]:
-                            try:
-                                total_monto += float(row[col].replace("$", "").replace(",", "").strip())
-                            except ValueError:
-                                pass
-            return {
-                "file": filename,
-                "headers": headers,
-                "total_registros": len(rows),
-                "suma_detectada": round(total_monto, 2),
-                "primeros_registros": rows[:5]
-            }
-        except Exception as e:
-            logger.error(f"Error al leer archivo CSV '{filename}': {e}")
-            return {"error": str(e)}
-
-    def add_financial_record_extended(
+    def add_transaction(
         self,
-        filename: str = "Registro_Financiero.csv",
-        fecha: str = "2026-08-14",
-        concepto: str = "Ingreso",
-        monto: float = 0.0,
-        tipo: str = "Ingreso",
-        entidad: str = "Davivienda",
-        categoria: str = "Salario"
-    ) -> bool:
-        """Agrega un registro financiero completo a un archivo CSV"""
-        if not filename.endswith(".csv"):
-            filename += ".csv"
-        file_path = os.path.join(self.dir_path, filename)
-        file_exists = os.path.exists(file_path)
-        
+        cuenta: str,
+        monto: float,
+        fecha: str,
+        tipo: str,
+        categoria: str,
+        concepto: str
+    ) -> Dict[str, Any]:
+        """Agrega una transacción a la base de datos cumpliendo el esquema estricto"""
+        cuenta_upper = cuenta.upper().strip()
+        if cuenta_upper not in VALID_CUENTAS:
+            cuenta_upper = "BDV" if "BDV" in cuenta_upper or "DAVIVIENDA" in cuenta_upper else "BLB"
+
+        tipo_clean = tipo.lower().strip()
+        if tipo_clean not in VALID_TIPOS:
+            tipo_clean = "ingreso" if "ingreso" in tipo_clean else "egreso"
+
+        cat_clean = categoria.lower().strip()
+        if cat_clean not in VALID_CATEGORIAS:
+            cat_clean = "otros"
+
+        clean_monto = abs(float(monto))
+
+        record = {
+            "fecha": fecha.strip(),
+            "concepto": concepto.strip(),
+            "monto": f"{clean_monto:.2f}",
+            "cuenta": cuenta_upper,
+            "tipo": tipo_clean,
+            "categoria": cat_clean
+        }
+
         try:
-            with open(file_path, "a", newline="", encoding="utf-8") as f:
-                fieldnames = ["fecha", "concepto", "monto", "tipo", "entidad", "categoria"]
+            file_exists = os.path.exists(self.db_path)
+            with open(self.db_path, "a", newline="", encoding="utf-8") as f:
+                fieldnames = ["fecha", "concepto", "monto", "cuenta", "tipo", "categoria"]
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 if not file_exists:
                     writer.writeheader()
-                writer.writerow({
-                    "fecha": fecha,
-                    "concepto": concepto,
-                    "monto": f"{monto:.2f}",
-                    "tipo": tipo,
-                    "entidad": entidad,
-                    "categoria": categoria
-                })
-            logger.info(f"Registro financiero agregado a '{filename}': {concepto} - ${monto} ({entidad})")
-            return True
+                writer.writerow(record)
+            logger.info(f"Transacción registrada exitosamente: {record}")
+            return {"status": "success", "record": record}
         except Exception as e:
-            logger.error(f"Error al escribir en archivo financiero '{filename}': {e}")
-            return False
+            logger.error(f"Error registrando transacción financiera: {e}")
+            return {"status": "error", "message": str(e)}
 
-    def add_financial_record(self, filename: str, concepto: str, monto: float, categoria: str = "General") -> bool:
-        return self.add_financial_record_extended(filename=filename, fecha="2026-08-17", concepto=concepto, monto=monto, tipo="Ingreso" if monto>=0 else "Gasto", entidad="General", categoria=categoria)
+    def get_dashboard_summary(self) -> Dict[str, Any]:
+        """Calcula el estado de fondos de cada cuenta (BDV, BLB), últimos movimientos y Top 3 movimientos más comunes"""
+        self._ensure_seed_data()
+        
+        records = []
+        try:
+            with open(self.db_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for r in reader:
+                    records.append(r)
+        except Exception as e:
+            logger.error(f"Error al leer finanzas_db.csv: {e}")
 
-    def get_all_balances(self) -> Dict[str, Any]:
-        """Calcula el saldo consolidado leyendo todos los archivos CSV de finanzas"""
-        files = self.list_financial_files()
+        saldos = {"BDV": 0.0, "BLB": 0.0}
         total_ingresos = 0.0
-        total_gastos = 0.0
-        registros = []
-        cuentas = {}
+        total_egresos = 0.0
 
-        for f in files:
-            if not f.endswith(".csv"): continue
-            path = os.path.join(self.dir_path, f)
+        concepto_counter = Counter()
+        concepto_amounts = {}
+        categoria_counter = Counter()
+
+        parsed_records = []
+        for r in records:
+            cuenta = r.get("cuenta", "BDV").upper()
+            tipo = r.get("tipo", "ingreso").lower()
+            concepto = r.get("concepto", "Transacción").strip()
+            categoria = r.get("categoria", "otros").lower()
             try:
-                with open(path, "r", encoding="utf-8") as fp:
-                    reader = csv.DictReader(fp)
-                    for r in reader:
-                        m_str = r.get("monto", "0").replace("$", "").replace(",", "").strip()
-                        try:
-                            val = float(m_str)
-                        except ValueError:
-                            val = 0.0
+                monto = float(r.get("monto", "0").replace("$", "").replace(",", "").strip())
+            except ValueError:
+                monto = 0.0
 
-                        tipo = r.get("tipo", "").capitalize()
-                        entidad = r.get("entidad", "Davivienda").capitalize()
-                        if not tipo:
-                            tipo = "Ingreso" if val >= 0 else "Gasto"
-                            val = abs(val)
+            if tipo == "ingreso":
+                saldos[cuenta] = saldos.get(cuenta, 0.0) + monto
+                total_ingresos += monto
+            else:
+                saldos[cuenta] = saldos.get(cuenta, 0.0) - monto
+                total_egresos += monto
 
-                        if tipo == "Ingreso":
-                            total_ingresos += val
-                            cuentas[entidad] = cuentas.get(entidad, 0.0) + val
-                        else:
-                            total_gastos += val
-                            cuentas[entidad] = cuentas.get(entidad, 0.0) - val
+            # Conteo para Top Movimientos
+            concepto_counter[concepto] += 1
+            concepto_amounts[concepto] = concepto_amounts.get(concepto, 0.0) + monto
+            categoria_counter[categoria] += 1
 
-                        registros.append(r)
-            except Exception as e:
-                logger.error(f"Error procesando '{f}': {e}")
+            parsed_records.append({
+                "fecha": r.get("fecha", "14/08/2026"),
+                "concepto": concepto,
+                "monto": round(monto, 2),
+                "cuenta": cuenta,
+                "cuenta_nombre": "Banco Davivienda" if cuenta == "BDV" else "Bancolombia",
+                "tipo": tipo,
+                "categoria": categoria
+            })
 
-        saldo_neto = total_ingresos - total_gastos
+        # Top 3 Movimientos Más Comunes (por frecuencia de concepto / categoría)
+        top_conceptos = []
+        for conc, freq in concepto_counter.most_common(3):
+            top_conceptos.append({
+                "concepto": conc,
+                "frecuencia": freq,
+                "monto_total": round(concepto_amounts.get(conc, 0.0), 2)
+            })
+
+        saldo_consolidado = saldos.get("BDV", 0.0) + saldos.get("BLB", 0.0)
+
         return {
+            "saldos_cuentas": {
+                "BDV": round(saldos.get("BDV", 0.0), 2),
+                "BLB": round(saldos.get("BLB", 0.0), 2),
+                "total_consolidado": round(saldo_consolidado, 2)
+            },
             "total_ingresos": round(total_ingresos, 2),
-            "total_gastos": round(total_gastos, 2),
-            "saldo_neto": round(saldo_neto, 2),
-            "desglose_cuentas": cuentas,
-            "total_transacciones": len(registros),
-            "ultimas_transacciones": registros[-5:]
+            "total_egresos": round(total_egresos, 2),
+            "top_3_movimientos": top_conceptos,
+            "total_transacciones": len(parsed_records),
+            "ultimos_movimientos": list(reversed(parsed_records))
         }
 
-finance_manager = FinanceManager()
+    # Compatibilidad con métodos anteriores
+    def list_financial_files() -> List[str]:
+        return ["finanzas_db.csv"]
+
+    def add_financial_record_extended(self, filename="finanzas_db.csv", fecha="14/08/2026", concepto="Pago", monto=0.0, tipo="ingreso", entidad="BDV", categoria="trabajo") -> bool:
+        res = self.add_transaction(cuenta=entidad, monto=monto, fecha=fecha, tipo=tipo, categoria=categoria, concepto=concepto)
+        return res.get("status") == "success"
+
+    def get_all_balances(self) -> Dict[str, Any]:
+        dash = self.get_dashboard_summary()
+        return {
+            "total_ingresos": dash["total_ingresos"],
+            "total_gastos": dash["total_egresos"],
+            "saldo_neto": dash["saldos_cuentas"]["total_consolidado"],
+            "desglose_cuentas": dash["saldos_cuentas"],
+            "total_transacciones": dash["total_transacciones"],
+            "ultimas_transacciones": dash["ultimos_movimientos"][:5]
+        }
+
+finance_manager = StructuredFinanceManager()

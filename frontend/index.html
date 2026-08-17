@@ -3,80 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistente Agéntico Edge - Panel de Control & Chat</title>
+    <title>Asistente Agéntico Edge - Sistema Distribuido (/AssAntigravity)</title>
+    
+    <!-- GOOGLE FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --card-bg: #1e293b;
-            --card-hover: #334155;
-            --border-color: #334155;
-            --accent-blue: #38bdf8;
+            --bg-color: #0b0f19;
+            --card-bg: #151c2c;
+            --border-color: #232d42;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
             --accent-green: #22c55e;
             --accent-purple: #a855f7;
             --accent-amber: #f59e0b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --chat-user-bg: #0284c7;
-            --chat-agent-bg: #1e293b;
+            --chat-user-bg: #1e293b;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
         header {
-            background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-color); padding: 1rem 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 100;
+            background-color: #0f172a;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .brand { display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; font-weight: 700; color: var(--accent-blue); }
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-main);
+        }
 
         .nav-tabs {
-            display: flex; gap: 0.5rem; background: #0f172a; padding: 0.25rem;
-            border-radius: 12px; border: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+            background: #090d16;
+            padding: 0.3rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
         }
 
         .tab-btn {
-            background: transparent; border: none; color: var(--text-muted);
-            padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 600;
-            font-size: 0.875rem; cursor: pointer; transition: all 0.2s ease;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .tab-btn:hover { color: var(--text-main); }
-        .tab-btn.active { background: var(--card-bg); color: var(--accent-blue); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--accent-blue);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
 
         .status-badge {
-            display: inline-flex; align-items: center; gap: 0.5rem;
-            background: rgba(34, 197, 94, 0.15); color: var(--accent-green);
-            padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.875rem;
-            font-weight: 600; border: 1px solid rgba(34, 197, 94, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent-green);
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(34, 197, 94, 0.2);
         }
 
-        .dot { width: 8px; height: 8px; background-color: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); }
 
-        main { flex: 1; padding: 2rem; max-width: 1300px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; }
-        .tab-content { display: none; flex-direction: column; flex: 1; }
-        .tab-content.active { display: flex; }
+        /* MAIN CONTAINER */
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
 
-        /* CHAT STYLES */
-        .chat-container { display: flex; flex-direction: column; height: 75vh; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* CHAT INTERFACE */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 160px);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
 
         .chat-header {
-            padding: 1rem 1.5rem; background: #0f172a; border-bottom: 1px solid var(--border-color);
-            display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+            padding: 1rem 1.5rem;
+            background: #0f172a;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .active-tier-tag {
-            font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 6px;
-            background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.3);
+            font-size: 0.8rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            font-family: 'Fira Code', monospace;
         }
 
-        .chat-messages { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem; }
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
         .message { display: flex; flex-direction: column; max-width: 85%; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -108,7 +177,7 @@
         .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
         label { font-size: 0.875rem; color: var(--text-muted); font-weight: 600; }
 
-        input[type="text"], input[type="password"], select { background: #0f172a; border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; font-size: 1rem; width: 100%; }
+        input[type="text"], input[type="password"], input[type="number"], select { background: #0f172a; border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; font-size: 1rem; width: 100%; }
         input:focus, select:focus { outline: none; border-color: var(--accent-blue); }
 
         .btn { background: var(--accent-blue); color: #0f172a; font-weight: 700; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.5rem; }
@@ -123,7 +192,6 @@
 
         .file-list { list-style: none; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
         .file-item { background: #0f172a; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .file-actions { display: flex; gap: 0.5rem; }
 
         /* MODALES */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 1000; }
@@ -142,7 +210,8 @@
 
         <nav class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat Agéntico</button>
-            <button class="tab-btn" onclick="switchTab('config')">⚙️ Failover & Selección de Modelos</button>
+            <button class="tab-btn" onclick="switchTab('finance-dash')">📊 Finanzas & Cuentas</button>
+            <button class="tab-btn" onclick="switchTab('config')">⚙️ Failover & Modelos</button>
             <button class="tab-btn" onclick="switchTab('vault')">📁 Bóveda & RAG</button>
         </nav>
 
@@ -193,7 +262,136 @@
             </div>
         </section>
 
-        <!-- TAB 2: CONFIGURACIÓN & FAILOVER -->
+        <!-- TAB 2: DASHBOARD FINANCIERO Y GESTIÓN DE CUENTAS (NUEVO) -->
+        <section id="tab-finance-dash" class="tab-content">
+            <h2>📊 Dashboard Financiero y Gestión de Cuentas (BDV & BLB)</h2>
+            <p style="color: var(--text-muted); margin-top: 0.25rem;">
+                Monitoreo en tiempo real del saldo de fondos, desglose por banco (Davivienda BDV / Bancolombia BLB) y registro de transacciones.
+            </p>
+
+            <!-- ESTADO DE FONDOS -->
+            <div class="grid" style="margin-top: 1.5rem;">
+                <div class="card" style="border-left: 4px solid var(--accent-blue);">
+                    <div class="card-title">💰 Saldo Consolidado Total</div>
+                    <div class="card-value" id="fin-total-saldo">$0 COP</div>
+                    <div class="card-desc">Fondo total disponible en todas las cuentas</div>
+                </div>
+
+                <div class="card" style="border-left: 4px solid var(--accent-green);">
+                    <div class="card-title">🏦 Banco Davivienda (BDV)</div>
+                    <div class="card-value" id="fin-bdv-saldo" style="color: var(--accent-green);">$0 COP</div>
+                    <div class="card-desc">Cuenta BDV - Granja Solar / Trabajo</div>
+                </div>
+
+                <div class="card" style="border-left: 4px solid var(--accent-purple);">
+                    <div class="card-title">🏦 Bancolombia (BLB)</div>
+                    <div class="card-value" id="fin-blb-saldo" style="color: var(--accent-purple);">$0 COP</div>
+                    <div class="card-desc">Cuenta BLB - Personal / Proyectos</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📈 Total Ingresos / 📉 Egresos</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                        <div>
+                            <span style="font-size: 0.8rem; color: var(--accent-green); font-weight: 600;">Ingresos:</span>
+                            <div id="fin-total-ingresos" style="font-weight: 700; color: var(--accent-green); font-size: 1.1rem;">$0 COP</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.8rem; color: #ef4444; font-weight: 600;">Egresos:</span>
+                            <div id="fin-total-egresos" style="font-weight: 700; color: #ef4444; font-size: 1.1rem;">$0 COP</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid" style="margin-top: 1.5rem;">
+                <!-- TOP 3 MOVIMIENTOS MÁS COMUNES -->
+                <div class="card">
+                    <div class="card-title">⭐ Top 3 Movimientos Más Comunes</div>
+                    <div id="fin-top-movimientos" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Cargando estadísticas...</div>
+                    </div>
+                </div>
+
+                <!-- FORMULARIO: REGISTRAR NUEVO MOVIMIENTO FINANCIERO -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-title">➕ Registrar Nuevo Movimiento Financiero</div>
+                    <form id="finance-form" onsubmit="submitTransaction(event)" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div class="form-group">
+                            <label for="trans-cuenta">Cuenta Bancaria:</label>
+                            <select id="trans-cuenta" required>
+                                <option value="BDV">🏦 BDV (Banco Davivienda)</option>
+                                <option value="BLB">🏦 BLB (Bancolombia)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="trans-tipo">Tipo de Operación:</label>
+                            <select id="trans-tipo" required>
+                                <option value="ingreso">🟢 Ingreso (+)</option>
+                                <option value="egreso">🔴 Egreso (-)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="trans-categoria">Categoría:</label>
+                            <select id="trans-categoria" required>
+                                <option value="trabajo">💼 Trabajo / Quincena</option>
+                                <option value="comida">🍽️ Comida</option>
+                                <option value="ocio">🎉 Ocio</option>
+                                <option value="casa">🏠 Casa</option>
+                                <option value="transporte">🚗 Transporte</option>
+                                <option value="otros">📌 Otros</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="trans-monto">Monto ($ COP):</label>
+                            <input type="number" id="trans-monto" step="100" placeholder="Ej: 2070000" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="trans-fecha">Fecha (DD/MM/YYYY):</label>
+                            <input type="text" id="trans-fecha" value="14/08/2026" required>
+                        </div>
+
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="trans-concepto">Concepto / Descripción:</label>
+                            <input type="text" id="trans-concepto" placeholder="Ej: Pago de quincena del trabajo" required>
+                        </div>
+
+                        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-green" style="margin-top: 0;">💾 Guardar Transacción</button>
+                        </div>
+                    </form>
+                    <div class="msg-box" id="fin-msg-box"></div>
+                </div>
+            </div>
+
+            <!-- TABLA DE ÚLTIMOS MOVIMIENTOS -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-title">📜 Últimos Movimientos Registrados</div>
+                <div style="overflow-x: auto; margin-top: 1rem;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
+                                <th style="padding: 0.75rem;">Fecha</th>
+                                <th style="padding: 0.75rem;">Cuenta</th>
+                                <th style="padding: 0.75rem;">Concepto</th>
+                                <th style="padding: 0.75rem;">Categoría</th>
+                                <th style="padding: 0.75rem;">Tipo</th>
+                                <th style="padding: 0.75rem; text-align: right;">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fin-table-body">
+                            <tr><td colspan="6" style="padding: 1rem; color: var(--text-muted);">Cargando historial de movimientos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: CONFIGURACIÓN & FAILOVER -->
         <section id="tab-config" class="tab-content">
             <h2>Panel de Diagnóstico, Modelos y Configuración</h2>
             <p style="color: var(--text-muted); margin-top: 0.25rem;">Monitoreo en tiempo real y selección de proveedores de inferencia.</p>
@@ -259,7 +457,7 @@
             </div>
         </section>
 
-        <!-- TAB 3: BÓVEDA & RECURSOS -->
+        <!-- TAB 4: BÓVEDA & RECURSOS -->
         <section id="tab-vault" class="tab-content">
             <h2>Gestión de Recursos Locales (/AssAntigravity/data)</h2>
             <p style="color: var(--text-muted); margin-top: 0.25rem;">Carga PDFs al RAG e inspecciona o descarga tus notas de Obsidian directamente a tu PC.</p>
@@ -342,6 +540,10 @@
             
             event.target.classList.add('active');
             document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            if (tabId === 'finance-dash') {
+                loadFinanceDashboard();
+            }
         }
 
         function autoExpandTextarea(el) {
@@ -363,6 +565,100 @@
             box.className = `msg-box ${isSuccess ? 'msg-success' : 'msg-error'}`;
             box.style.display = 'block';
             setTimeout(() => { box.style.display = 'none'; }, 6000);
+        }
+
+        async function loadFinanceDashboard() {
+            try {
+                const res = await fetch('/api/tools/finance/dashboard');
+                if (!res.ok) return;
+                const data = await res.json();
+
+                const saldos = data.saldos_cuentas || {};
+                document.getElementById('fin-total-saldo').textContent = `$${(saldos.total_consolidado || 0).toLocaleString('es-CO')} COP`;
+                document.getElementById('fin-bdv-saldo').textContent = `$${(saldos.BDV || 0).toLocaleString('es-CO')} COP`;
+                document.getElementById('fin-blb-saldo').textContent = `$${(saldos.BLB || 0).toLocaleString('es-CO')} COP`;
+
+                document.getElementById('fin-total-ingresos').textContent = `$${(data.total_ingresos || 0).toLocaleString('es-CO')} COP`;
+                document.getElementById('fin-total-egresos').textContent = `$${(data.total_egresos || 0).toLocaleString('es-CO')} COP`;
+
+                const topContainer = document.getElementById('fin-top-movimientos');
+                const tops = data.top_3_movimientos || [];
+                if (tops.length === 0) {
+                    topContainer.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-muted);">Sin movimientos registrados.</div>`;
+                } else {
+                    topContainer.innerHTML = tops.map((item, idx) => `
+                        <div style="background: #0f172a; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: var(--accent-blue); font-size: 0.9rem;">#${idx+1} ${item.concepto}</strong>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${item.frecuencia} registro(s)</div>
+                            </div>
+                            <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
+                                $${(item.monto_total || 0).toLocaleString('es-CO')} COP
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                const tableBody = document.getElementById('fin-table-body');
+                const list = data.ultimos_movimientos || [];
+                if (list.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" style="padding: 1rem; color: var(--text-muted);">No hay transacciones registradas.</td></tr>`;
+                } else {
+                    tableBody.innerHTML = list.map(item => {
+                        const isIngreso = item.tipo === 'ingreso';
+                        const tipoBadge = isIngreso 
+                            ? `<span style="background: rgba(34, 197, 94, 0.15); color: var(--accent-green); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">🟢 Ingreso</span>`
+                            : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">🔴 Egreso</span>`;
+
+                        const cuentaBadge = item.cuenta === 'BDV'
+                            ? `<span style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">BDV</span>`
+                            : `<span style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">BLB</span>`;
+
+                        return `
+                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                                <td style="padding: 0.75rem; color: var(--text-muted);">${item.fecha}</td>
+                                <td style="padding: 0.75rem;">${cuentaBadge}</td>
+                                <td style="padding: 0.75rem; font-weight: 600;">${item.concepto}</td>
+                                <td style="padding: 0.75rem; text-transform: capitalize; color: var(--text-muted);">${item.categoria}</td>
+                                <td style="padding: 0.75rem;">${tipoBadge}</td>
+                                <td style="padding: 0.75rem; text-align: right; font-weight: 700; color: ${isIngreso ? 'var(--accent-green)' : '#ef4444'};">
+                                    ${isIngreso ? '+' : '-'}$${(item.monto || 0).toLocaleString('es-CO')}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error al cargar dashboard financiero:', err);
+            }
+        }
+
+        async function submitTransaction(e) {
+            e.preventDefault();
+            const cuenta = document.getElementById('trans-cuenta').value;
+            const tipo = document.getElementById('trans-tipo').value;
+            const categoria = document.getElementById('trans-categoria').value;
+            const monto = parseFloat(document.getElementById('trans-monto').value);
+            const fecha = document.getElementById('trans-fecha').value;
+            const concepto = document.getElementById('trans-concepto').value;
+
+            try {
+                const res = await fetch('/api/tools/finance/transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cuenta, tipo, categoria, monto, fecha, concepto })
+                });
+                if (res.ok) {
+                    showMsg('✅ Transacción registrada con éxito en la base de datos.', true, 'fin-msg-box');
+                    document.getElementById('trans-monto').value = '';
+                    document.getElementById('trans-concepto').value = '';
+                    loadFinanceDashboard();
+                } else {
+                    showMsg('❌ Error al registrar transacción.', false, 'fin-msg-box');
+                }
+            } catch (err) {
+                showMsg(`❌ Error de conexión: ${err.message}`, false, 'fin-msg-box');
+            }
         }
 
         async function resetChatThread() {
@@ -401,389 +697,255 @@
             }
         }
 
-        async function savePcUrl() {
-            const input = document.getElementById('pc-url-input');
-            const urlVal = input.value.trim();
-            if (!urlVal) return;
-
-            try {
-                const res = await fetch('/api/system/update-pc-url', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pc_url: urlVal })
-                });
-
-                if (res.ok) {
-                    showMsg('✅ URL de Ollama PC actualizada exitosamente.');
-                    fetchStatus();
-                }
-            } catch (err) {
-                showMsg('Error al actualizar URL del PC.', false);
-            }
-        }
-
-        async function onPcModelSelected(selectedModel) {
-            if (!selectedModel) return;
-
-            try {
-                const res = await fetch('/api/system/select-pc-model', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ model: selectedModel })
-                });
-
-                if (res.ok) {
-                    showMsg(`✅ Modelo de PC Ollama actualizado a '${selectedModel}'.`);
-                    fetchStatus();
-                }
-            } catch (err) {
-                showMsg('Error al actualizar el modelo de PC.', false);
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const messageText = input.value.trim();
-            if (!messageText) return;
-
-            const messagesContainer = document.getElementById('chat-messages');
-
-            const userDiv = document.createElement('div');
-            userDiv.className = 'message user';
-            userDiv.innerHTML = `<div class="bubble">${escapeHtml(messageText)}</div>`;
-            messagesContainer.appendChild(userDiv);
-            
-            input.value = '';
-            input.style.height = 'auto';
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'message agent';
-            loadingDiv.id = 'loading-msg';
-            loadingDiv.innerHTML = `<div class="bubble" style="color: var(--text-muted);">⏳ Antigravity está consultando herramientas y sintetizando respuesta...</div>`;
-            messagesContainer.appendChild(loadingDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-            try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: messageText, thread_id: currentThreadId })
-                });
-
-                document.getElementById('loading-msg')?.remove();
-
-                if (res.ok) {
-                    const data = await res.json();
-                    
-                    if (data.status === "AWAITING_USER_APPROVAL" && data.pending_action) {
-                        activePendingAction = data.pending_action;
-                        displayHITLModal(data.pending_action);
-                    } else {
-                        renderAgentMessage(data);
-                    }
-                } else {
-                    let errDetail = "Fallo en la comunicación con la API agéntica.";
-                    try {
-                        const errData = await res.json();
-                        if (errData.detail) errDetail = errData.detail;
-                    } catch(e) {}
-                    showAgentErrorMessage(`Error HTTP ${res.status}: ${errDetail}`);
-                }
-            } catch (err) {
-                document.getElementById('loading-msg')?.remove();
-                showAgentErrorMessage("Error de red al conectar con el backend FastAPI.");
-            }
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        function displayHITLModal(action) {
-            document.getElementById('hitl-agent-name').textContent = `Agente: ${action.agent_name} (${action.tool_name})`;
-            document.getElementById('hitl-description').textContent = action.description;
-            document.getElementById('hitl-payload').textContent = JSON.stringify(action.payload, null, 2);
-            document.getElementById('hitl-modal').style.display = 'flex';
-        }
-
-        async function respondHITLAction(isApproved) {
-            if (!activePendingAction) return;
-
-            document.getElementById('hitl-modal').style.display = 'none';
-            const endpoint = isApproved ? '/api/chat/approve-action' : '/api/chat/reject-action';
-
-            const messagesContainer = document.getElementById('chat-messages');
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'message agent';
-            loadingDiv.id = 'loading-msg-hitl';
-            loadingDiv.innerHTML = `<div class="bubble" style="color: var(--text-muted);">⏳ Reanudando ejecución agéntica...</div>`;
-            messagesContainer.appendChild(loadingDiv);
-
-            try {
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        thread_id: currentThreadId,
-                        action_id: activePendingAction.action_id
-                    })
-                });
-
-                document.getElementById('loading-msg-hitl')?.remove();
-
-                if (res.ok) {
-                    const data = await res.json();
-                    renderAgentMessage(data);
-                    fetchVaultResources();
-                } else {
-                    showAgentErrorMessage("Error al procesar la decisión de aprobación.");
-                }
-            } catch (err) {
-                document.getElementById('loading-msg-hitl')?.remove();
-                showAgentErrorMessage("Error de red al procesar la aprobación.");
-            }
-            activePendingAction = null;
-        }
-
-        function renderAgentMessage(data) {
-            const messagesContainer = document.getElementById('chat-messages');
-            const agentDiv = document.createElement('div');
-            agentDiv.className = 'message agent';
-            
-            const pathChips = (data.agent_path || []).map(p => `<span class="path-chip">${escapeHtml(p)}</span>`).join(' ');
-
-            agentDiv.innerHTML = `
-                <div class="bubble">${formatMarkdown(data.response)}</div>
-                <div class="agent-meta">
-                    <span>⚡ ${escapeHtml(data.active_tier)} (${escapeHtml(data.active_model)})</span>
-                    <span>⏱️ ${data.latency_ms} ms</span>
-                    <div>${pathChips}</div>
-                </div>
-            `;
-            messagesContainer.appendChild(agentDiv);
-            document.getElementById('active-tier-badge').textContent = `${data.active_tier} (${data.active_model})`;
-        }
-
-        function showAgentErrorMessage(msg) {
-            const messagesContainer = document.getElementById('chat-messages');
-            const errDiv = document.createElement('div');
-            errDiv.className = 'message agent';
-            errDiv.innerHTML = `<div class="bubble" style="border-color: #ef4444; color: #ef4444;">❌ ${msg}</div>`;
-            messagesContainer.appendChild(errDiv);
-        }
-
-        function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-
-        function formatMarkdown(text) {
-            return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        }
-
         async function fetchStatus() {
             try {
                 const res = await fetch('/api/system/status');
                 if (res.ok) {
                     const data = await res.json();
-                    
-                    if (data.selected_provider_mode) {
-                        document.getElementById('chat-provider-select').value = data.selected_provider_mode;
+                    const providers = data.providers || {};
+
+                    document.getElementById('pc-status').textContent = providers.tier1_pc ? providers.tier1_pc.message : 'Desconocido';
+                    document.getElementById('gemini-status').textContent = providers.tier2_cloud ? providers.tier2_cloud.message : 'Desconocido';
+                    document.getElementById('rpi-status').textContent = providers.tier3_rpi ? providers.tier3_rpi.message : 'Desconocido';
+
+                    if (data.ollama_pc_model) {
+                        document.getElementById('pc-model-name').textContent = data.ollama_pc_model;
+                        const pcSel = document.getElementById('pc-model-select');
+                        if (pcSel) pcSel.value = data.ollama_pc_model;
+                    }
+                    if (data.ollama_pc_url) {
+                        const pcUrlInput = document.getElementById('pc-url-input');
+                        if (pcUrlInput) pcUrlInput.value = data.ollama_pc_url;
                     }
 
-                    document.getElementById('pc-model-name').textContent = data.tier1_pc.model;
-                    document.getElementById('pc-url-input').value = data.tier1_pc.url;
-                    document.getElementById('pc-status').innerHTML = data.tier1_pc.available 
-                        ? `<span style="color: var(--accent-green); font-weight: 600;">🟢 Conectado</span> (${data.tier1_pc.detail})` 
-                        : `<span style="color: #ef4444; font-weight: 600;">🔴 Inalcanzable</span> (${data.tier1_pc.detail})`;
-
-                    if (data.tier1_pc.available_models && data.tier1_pc.available_models.length) {
-                        populatePcModelsDropdown(data.tier1_pc.available_models, data.tier1_pc.model);
+                    if (data.selected_provider) {
+                        const chatSel = document.getElementById('chat-provider-select');
+                        if (chatSel) chatSel.value = data.selected_provider;
                     }
 
-                    document.getElementById('gemini-active-model').textContent = data.tier2_cloud.model;
-                    document.getElementById('gemini-status').innerHTML = data.tier2_cloud.available 
-                        ? `<span style="color: var(--accent-green); font-weight: 600;">🟢 Conectado</span> (${data.tier2_cloud.detail})` 
-                        : `<span style="color: var(--accent-amber); font-weight: 600;">🟡 Sin API Key activa</span> (${data.tier2_cloud.detail})`;
+                    if (data.gemini_model) {
+                        document.getElementById('gemini-active-model').textContent = data.gemini_model;
+                        const sel = document.getElementById('gemini-model-select');
+                        if (sel) sel.value = data.gemini_model;
+                    }
 
-                    document.getElementById('gemini-persisted-badge').textContent = data.tier2_cloud.available
-                        ? "✅ API Key guardada de forma persistente en /dbs/credentials.json"
-                        : "⚠️ No hay API Key guardada en /dbs/credentials.json";
-
-                    document.getElementById('rpi-model-name').textContent = data.tier3_rpi.model;
-                    document.getElementById('rpi-status').innerHTML = data.tier3_rpi.available 
-                        ? `<span style="color: var(--accent-green); font-weight: 600;">🟢 Ollama Local Activo</span>` 
-                        : `<span style="color: var(--text-muted); font-weight: 600;">🟡 Standby / Offline</span> (${data.tier3_rpi.detail})`;
-
-                    document.getElementById('active-tier-badge').textContent = `Activo: ${data.active_provider.tier} (${data.active_provider.model})`;
+                    const badge = document.getElementById('active-tier-badge');
+                    if (badge) {
+                        badge.textContent = `⚡ Activo: ${data.active_provider || 'Auto'}`;
+                    }
                 }
             } catch (err) {
-                console.warn('Error fetching system status:', err);
+                console.warn('Fallo al obtener estado del servidor:', err);
             }
         }
 
-        function populatePcModelsDropdown(models, activeModel) {
-            const select = document.getElementById('pc-model-select');
-            if (!select) return;
-            select.innerHTML = '';
-            
-            models.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = m;
-                if (m === activeModel) opt.selected = true;
-                select.appendChild(opt);
-            });
-        }
-
-        async function fetchGeminiConfig() {
+        async function savePcUrl() {
+            const newUrl = document.getElementById('pc-url-input').value;
+            if (!newUrl) return;
             try {
-                const res = await fetch('/api/gemini/config');
+                const res = await fetch('/api/system/update-pc-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: newUrl })
+                });
                 if (res.ok) {
-                    const data = await res.json();
-                    if (data.active_model) {
-                        document.getElementById('gemini-active-model').textContent = data.active_model;
-                    }
-                    populateModelsDropdown(data.available_models, data.active_model);
+                    showMsg('✅ URL de PC Ollama actualizada y guardada.');
+                    fetchStatus();
                 }
             } catch (err) {
-                console.warn('Error fetching Gemini config:', err);
+                showMsg('❌ Error actualizando URL.', false);
             }
         }
 
-        function populateModelsDropdown(models, activeModel) {
-            const select = document.getElementById('gemini-model-select');
-            select.innerHTML = '';
-            
-            const list = (models && models.length) ? models : [
-                {id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash"},
-                {id: "gemini-1.5-flash", displayName: "Gemini 1.5 Flash"},
-                {id: "gemini-1.5-pro", displayName: "Gemini 1.5 Pro"},
-                {id: "gemini-2.0-flash-lite", displayName: "Gemini 2.0 Flash Lite"}
-            ];
-
-            list.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.id;
-                opt.textContent = m.displayName ? `${m.displayName} (${m.id})` : m.id;
-                if (m.id === activeModel) opt.selected = true;
-                select.appendChild(opt);
-            });
+        async function onPcModelSelected(modelName) {
+            try {
+                const res = await fetch('/api/system/select-pc-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: modelName })
+                });
+                if (res.ok) {
+                    showMsg(`✅ Modelo PC Local cambiado a: ${modelName}`);
+                    fetchStatus();
+                }
+            } catch (err) {
+                showMsg('❌ Error cambiando modelo PC Local.', false);
+            }
         }
 
         async function saveGeminiKey() {
-            const keyInput = document.getElementById('gemini-key-input').value.trim();
-            if (!keyInput) {
-                showMsg('Por favor ingresa una API Key válida.', false);
-                return;
-            }
+            const key = document.getElementById('gemini-key-input').value;
+            if (!key) return showMsg('Por favor ingresa una API Key válida.', false);
 
             try {
-                const res = await fetch('/api/gemini/key', {
+                const res = await fetch('/api/system/set-gemini-key', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: keyInput })
+                    body: JSON.stringify({ api_key: key })
                 });
 
-                const data = await res.json();
                 if (res.ok) {
-                    showMsg('✅ API Key almacenada permanentemente en /dbs/credentials.json');
+                    showMsg('✅ Clave de Gemini guardada en /dbs/credentials.json con éxito.');
                     document.getElementById('gemini-key-input').value = '';
-                    document.getElementById('gemini-active-model').textContent = data.active_model;
-                    populateModelsDropdown(data.available_models, data.active_model);
                     fetchStatus();
                 } else {
-                    showMsg(`❌ Error: ${data.detail || 'API Key inválida'}`, false);
+                    showMsg('❌ Error al guardar la clave.', false);
                 }
             } catch (err) {
-                showMsg('Error de red al conectar con el backend.', false);
+                showMsg('❌ Error de conexión al guardar clave.', false);
             }
         }
 
         async function onModelSelected() {
-            const selectedModel = document.getElementById('gemini-model-select').value;
-            if (!selectedModel) return;
-
+            const model = document.getElementById('gemini-model-select').value;
             try {
-                const res = await fetch('/api/gemini/select-model', {
+                const res = await fetch('/api/system/select-gemini-model', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ model: selectedModel })
+                    body: JSON.stringify({ model_id: model })
+                });
+
+                if (res.ok) {
+                    showMsg(`✅ Modelo de Gemini cambiado a: ${model}`);
+                    fetchStatus();
+                }
+            } catch (err) {
+                showMsg('❌ Error cambiando el modelo.', false);
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            input.style.height = 'auto';
+
+            appendMessage('user', text);
+
+            try {
+                const res = await fetch('/api/chat/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, thread_id: currentThreadId })
                 });
 
                 if (res.ok) {
                     const data = await res.json();
-                    document.getElementById('gemini-active-model').textContent = data.active_model;
-                    showMsg(`✅ Modelo de Gemini actualizado a '${data.active_model}'.`);
-                    fetchStatus();
+                    
+                    if (data.status === 'AWAITING_USER_APPROVAL' && data.pending_action) {
+                        activePendingAction = data.pending_action;
+                        showHITLModal(data.pending_action);
+                        appendMessage('agent', `⚠️ ${data.response}`, 'Requiere Aprobación HITL', 'Harness Safety');
+                    } else {
+                        appendMessage('agent', data.response, data.active_tier || 'Edge Hybrid', data.active_model || 'LLM Router');
+                    }
+                } else {
+                    appendMessage('agent', '❌ Error al obtener respuesta del servidor agéntico.');
                 }
             } catch (err) {
-                showMsg('Error al actualizar el modelo seleccionado.', false);
+                appendMessage('agent', `❌ Error de red: ${err.message}`);
             }
         }
 
-        async function uploadPDFToRAG() {
-            const fileInput = document.getElementById('pdf-file-input');
-            if (!fileInput.files.length) {
-                showMsg('Selecciona un archivo PDF para subir.', false, 'rag-msg-box');
-                return;
-            }
+        function showHITLModal(action) {
+            document.getElementById('hitl-agent-name').textContent = `Agente: ${action.agent_name || 'Agente Especialista'}`;
+            document.getElementById('hitl-description').textContent = action.description || 'El agente requiere tu autorización.';
+            document.getElementById('hitl-payload').textContent = JSON.stringify(action.payload || {}, null, 2);
+            document.getElementById('hitl-modal').style.display = 'flex';
+        }
 
-            const file = fileInput.files[0];
-            showMsg(`⏳ Subiendo e indexando '${file.name}' con Docling MCP...`, true, 'rag-msg-box');
-
-            const formData = new FormData();
-            formData.append('file', file);
+        async function respondHITLAction(approved) {
+            document.getElementById('hitl-modal').style.display = 'none';
+            if (!activePendingAction) return;
 
             try {
-                const res = await fetch('/api/tools/rag/upload-pdf', {
+                const res = await fetch('/api/chat/approve-action', {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        thread_id: currentThreadId,
+                        approved: approved,
+                        feedback: approved ? 'Aprobado por el usuario en interfaz web.' : 'Rechazado por el usuario.'
+                    })
                 });
 
-                let data = {};
-                try { data = await res.json(); } catch (e) {}
-
                 if (res.ok) {
-                    showMsg(`✅ ${data.message || 'PDF cargado e indexado exitosamente.'}`, true, 'rag-msg-box');
-                    fileInput.value = '';
-                } else if (res.status === 413) {
-                    showMsg(`❌ Error 413: El archivo PDF excede el tamaño máximo permitido.`, false, 'rag-msg-box');
+                    const data = await res.json();
+                    appendMessage('agent', data.response, data.active_tier || 'HITL Executed', 'Action Complete');
                 } else {
-                    showMsg(`❌ Error (${res.status}): ${data.detail || 'Fallo en la subida'}`, false, 'rag-msg-box');
+                    appendMessage('agent', '❌ Error al procesar la respuesta de aprobación.');
                 }
             } catch (err) {
-                console.error("Error al subir PDF:", err);
-                showMsg('❌ Error de red o tamaño excedido al subir el PDF.', false, 'rag-msg-box');
+                appendMessage('agent', `❌ Error enviando aprobación: ${err.message}`);
+            } finally {
+                activePendingAction = null;
             }
         }
 
-        async function fetchVaultResources() {
+        function appendMessage(sender, text, tier = '', model = '') {
+            const container = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+
+            let metaHTML = '';
+            if (sender === 'agent' && (tier || model)) {
+                metaHTML = `
+                    <div class="agent-meta">
+                        <span class="path-chip">${tier}</span>
+                        <span>${model}</span>
+                    </div>
+                `;
+            }
+
+            msgDiv.innerHTML = `
+                <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
+                ${metaHTML}
+            `;
+
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function loadVaultResources() {
             try {
-                const obsRes = await fetch('/api/tools/obsidian/notes');
-                if (obsRes.ok) {
-                    const data = await obsRes.json();
-                    const list = document.getElementById('obsidian-list');
-                    if (data.notes && data.notes.length) {
-                        list.innerHTML = data.notes.map(n => `
+                const resObs = await fetch('/api/tools/obsidian/notes');
+                if (resObs.ok) {
+                    const data = await resObs.json();
+                    const listEl = document.getElementById('obsidian-list');
+                    if (data.notes && data.notes.length > 0) {
+                        listEl.innerHTML = data.notes.map(note => `
                             <li class="file-item">
-                                <span>📝 ${escapeHtml(n)}</span>
+                                <span>📄 <strong>${note}</strong></span>
                                 <div class="file-actions">
-                                    <button class="btn btn-small" onclick="viewNote('${escapeHtml(n)}')">👁️ Ver</button>
-                                    <button class="btn btn-small btn-green" onclick="downloadNote('${escapeHtml(n)}')">⬇️ Descargar</button>
+                                    <button class="btn btn-small" onclick="viewNote('${note}')">👁️ Ver</button>
+                                    <a href="/api/tools/obsidian/download?filename=${encodeURIComponent(note)}" download class="btn btn-small btn-green" style="text-decoration: none;">📥 Descargar</a>
                                 </div>
                             </li>
                         `).join('');
                     } else {
-                        list.innerHTML = '<li class="file-item">Sin notas en la bóveda</li>';
+                        listEl.innerHTML = `<li class="file-item" style="color: var(--text-muted);">No hay notas en la bóveda.</li>`;
                     }
                 }
 
-                const finRes = await fetch('/api/tools/finance/files');
-                if (finRes.ok) {
-                    const data = await finRes.json();
-                    const list = document.getElementById('finance-list');
-                    list.innerHTML = data.files.length ? data.files.map(f => `<li class="file-item">📊 ${escapeHtml(f)}</li>`).join('') : '<li class="file-item">Sin archivos financieros</li>';
+                const resFin = await fetch('/api/tools/finance/files');
+                if (resFin.ok) {
+                    const data = await resFin.json();
+                    const listEl = document.getElementById('finance-list');
+                    if (data.files && data.files.length > 0) {
+                        listEl.innerHTML = data.files.map(f => `
+                            <li class="file-item">
+                                <span>📊 <strong>${f}</strong></span>
+                                <span class="path-chip">CSV / Excel</span>
+                            </li>
+                        `).join('');
+                    } else {
+                        listEl.innerHTML = `<li class="file-item" style="color: var(--text-muted);">No hay archivos financieros.</li>`;
+                    }
                 }
             } catch (err) {
-                console.warn('Error fetching vault resources:', err);
+                console.error('Error cargando recursos:', err);
             }
         }
 
@@ -792,12 +954,12 @@
                 const res = await fetch(`/api/tools/obsidian/read?filename=${encodeURIComponent(filename)}`);
                 if (res.ok) {
                     const data = await res.json();
-                    document.getElementById('modal-note-title').textContent = `📝 ${data.filename}`;
+                    document.getElementById('modal-note-title').textContent = `📄 ${data.filename}`;
                     document.getElementById('modal-note-body').textContent = data.content;
                     document.getElementById('note-modal').style.display = 'flex';
                 }
             } catch (err) {
-                alert("Error al cargar el contenido de la nota.");
+                alert('Error al leer la nota.');
             }
         }
 
@@ -805,15 +967,42 @@
             document.getElementById('note-modal').style.display = 'none';
         }
 
-        function downloadNote(filename) {
-            window.location.href = `/api/tools/obsidian/download?filename=${encodeURIComponent(filename)}`;
+        async function uploadPDFToRAG() {
+            const input = document.getElementById('pdf-file-input');
+            if (!input.files || input.files.length === 0) {
+                return showMsg('Por favor selecciona un archivo PDF.', false, 'rag-msg-box');
+            }
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showMsg('⏳ Subiendo e indexando PDF con Docling MCP...', true, 'rag-msg-box');
+                const res = await fetch('/api/tools/rag/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    showMsg(`✅ ${data.message}`, true, 'rag-msg-box');
+                    input.value = '';
+                } else {
+                    const err = await res.json();
+                    showMsg(`❌ ${err.detail || 'Error al subir el archivo.'}`, false, 'rag-msg-box');
+                }
+            } catch (err) {
+                showMsg(`❌ Error de red: ${err.message}`, false, 'rag-msg-box');
+            }
         }
 
-        fetchStatus();
-        fetchGeminiConfig();
-        fetchVaultResources();
-        setInterval(fetchStatus, 10000);
-        setInterval(fetchVaultResources, 15000);
+        window.onload = () => {
+            fetchStatus();
+            loadVaultResources();
+            loadFinanceDashboard();
+            setInterval(fetchStatus, 8000);
+        };
     </script>
 </body>
 </html>

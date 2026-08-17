@@ -16,11 +16,13 @@ class CreateNoteRequest(BaseModel):
     content: str
     append: Optional[bool] = False
 
-class AddFinanceRecordRequest(BaseModel):
-    filename: str
-    concepto: str
+class TransactionRequest(BaseModel):
+    cuenta: str  # 'BLB' o 'BDV'
     monto: float
-    categoria: Optional[str] = "General"
+    fecha: Optional[str] = "14/08/2026"
+    tipo: str  # 'ingreso' o 'egreso'
+    categoria: str  # 'comida', 'ocio', 'casa', 'trabajo', 'transporte', 'otros'
+    concepto: str
 
 class CreateFileRequest(BaseModel):
     path: str
@@ -124,19 +126,25 @@ def delete_rpi_file(request: DeleteFileRequest):
         raise HTTPException(status_code=500, detail=f"Error al eliminar archivo '{request.path}'.")
     return {"status": "success", "path": request.path}
 
-@router.get("/finance/files")
-def list_finance_files():
-    """Lista los archivos financieros en /app/data/finanzas"""
-    files = finance_manager.list_financial_files()
-    return {"dir_path": finance_manager.dir_path, "count": len(files), "files": files}
+@router.get("/finance/dashboard")
+def get_finance_dashboard():
+    """Devuelve el resumen completo del Dashboard financiero (Saldos por cuenta BDV/BLB, Top 3 Movimientos y Últimos Movimientos)"""
+    return finance_manager.get_dashboard_summary()
 
-@router.post("/finance/record")
-def add_finance_record(request: AddFinanceRecordRequest):
-    """Agrega un registro de gasto o ingreso en archivo CSV"""
-    ok = finance_manager.add_financial_record(request.filename, request.concepto, request.monto, request.categoria)
-    if not ok:
-        raise HTTPException(status_code=500, detail="Error al agregar registro financiero.")
-    return {"status": "success", "record": request.dict()}
+@router.post("/finance/transaction")
+def add_finance_transaction(req: TransactionRequest):
+    """Registra un nuevo movimiento financiero cumpliendo el esquema estricto (cuenta, monto, fecha, tipo, categoría)"""
+    res = finance_manager.add_transaction(
+        cuenta=req.cuenta,
+        monto=req.monto,
+        fecha=req.fecha or "14/08/2026",
+        tipo=req.tipo,
+        categoria=req.categoria,
+        concepto=req.concepto
+    )
+    if res.get("status") != "success":
+        raise HTTPException(status_code=500, detail=res.get("message", "Error al registrar la transacción."))
+    return res
 
 @router.get("/google/status")
 def google_status():
