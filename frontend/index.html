@@ -165,7 +165,7 @@
                         <label for="chat-provider-select" style="font-size: 0.8rem; color: var(--text-muted);">Modelo Activo:</label>
                         <select id="chat-provider-select" onchange="changeProviderDirectly(this.value)" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.85rem; border-radius: 6px;">
                             <option value="auto">🤖 Auto (Failover 3 Capas)</option>
-                            <option value="tier1_pc">🖥️ PC Local LAN (qwen3.5:4b)</option>
+                            <option value="tier1_pc">🖥️ PC Local LAN (Ollama)</option>
                             <option value="tier2_cloud">☁️ Cloud Gemini (Gemini API)</option>
                             <option value="tier3_rpi">🍓 RPi Local Edge (qwen2.5:1.5b)</option>
                         </select>
@@ -199,18 +199,29 @@
             <p style="color: var(--text-muted); margin-top: 0.25rem;">Monitoreo en tiempo real y selección de proveedores de inferencia.</p>
 
             <div class="grid">
+                <!-- CARD PC LOCAL OLLAMA -->
                 <div class="card">
                     <div class="card-title">Prioridad 1: PC Local LAN (Ollama)</div>
                     <div class="card-value" id="pc-model-name">qwen3.5:4b</div>
                     <div class="card-desc" id="pc-status">Cargando estado...</div>
                     
                     <div class="form-group" style="margin-top: 1rem;">
+                        <label for="pc-model-select">Modelo Activo en PC Local:</label>
+                        <select id="pc-model-select" onchange="onPcModelSelected(this.value)">
+                            <option value="qwen3.5:4b">qwen3.5:4b (Predeterminado)</option>
+                            <option value="gemma3:4b">gemma3:4b</option>
+                            <option value="gemma4:e2b">gemma4:e2b</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
                         <label for="pc-url-input">Dirección IP/URL de Ollama en PC Local:</label>
-                        <input type="text" id="pc-url-input" placeholder="http://192.168.1.XX:11434">
+                        <input type="text" id="pc-url-input" placeholder="http://192.168.1.9:11434">
                         <button class="btn btn-small" onclick="savePcUrl()" style="margin-top: 0.5rem;">💾 Guardar IP y Probar Conexión</button>
                     </div>
                 </div>
 
+                <!-- CARD GEMINI CLOUD -->
                 <div class="card">
                     <div class="card-title">Prioridad 2: Cloud Gemini API</div>
                     <div class="card-value" id="gemini-active-model">gemini-2.0-flash</div>
@@ -218,6 +229,7 @@
                     <div style="font-size: 0.8rem; color: var(--accent-green); margin-top: 0.5rem;" id="gemini-persisted-badge">✅ Credenciales persistidas en /dbs/credentials.json</div>
                 </div>
 
+                <!-- CARD RPI EDGE -->
                 <div class="card">
                     <div class="card-title">Prioridad 3: Edge Fallback RPi</div>
                     <div class="card-value" id="rpi-model-name">qwen2.5:1.5b</div>
@@ -225,6 +237,7 @@
                 </div>
             </div>
 
+            <!-- GESTIÓN DE GEMINI API KEY -->
             <div class="card" style="margin-top: 2rem;">
                 <h3>🔑 Gestión de Gemini API Key y Selección de Modelo</h3>
                 <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
@@ -413,6 +426,25 @@
             }
         }
 
+        async function onPcModelSelected(selectedModel) {
+            if (!selectedModel) return;
+
+            try {
+                const res = await fetch('/api/system/select-pc-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: selectedModel })
+                });
+
+                if (res.ok) {
+                    showMsg(`✅ Modelo de PC Ollama actualizado a '${selectedModel}'.`);
+                    fetchStatus();
+                }
+            } catch (err) {
+                showMsg('Error al actualizar el modelo de PC.', false);
+            }
+        }
+
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const messageText = input.value.trim();
@@ -558,13 +590,18 @@
                     document.getElementById('pc-model-name').textContent = data.tier1_pc.model;
                     document.getElementById('pc-url-input').value = data.tier1_pc.url;
                     document.getElementById('pc-status').innerHTML = data.tier1_pc.available 
-                        ? `<span style="color: var(--accent-green);">🟢 Disponible</span> (${data.tier1_pc.detail})` 
-                        : `<span style="color: #ef4444;">🔴 Inalcanzable</span> (${data.tier1_pc.detail})`;
+                        ? `<span style="color: var(--accent-green); font-weight: 600;">🟢 Conectado</span> (${data.tier1_pc.detail})` 
+                        : `<span style="color: #ef4444; font-weight: 600;">🔴 Inalcanzable</span> (${data.tier1_pc.detail})`;
+
+                    // Poblar modelos de PC si están disponibles
+                    if (data.tier1_pc.available_models && data.tier1_pc.available_models.length) {
+                        populatePcModelsDropdown(data.tier1_pc.available_models, data.tier1_pc.model);
+                    }
 
                     document.getElementById('gemini-active-model').textContent = data.tier2_cloud.model;
                     document.getElementById('gemini-status').innerHTML = data.tier2_cloud.available 
-                        ? `<span style="color: var(--accent-green);">🟢 Conectado</span> (${data.tier2_cloud.detail})` 
-                        : `<span style="color: var(--accent-amber);">🟡 Sin API Key activa</span> (${data.tier2_cloud.detail})`;
+                        ? `<span style="color: var(--accent-green); font-weight: 600;">🟢 Conectado</span> (${data.tier2_cloud.detail})` 
+                        : `<span style="color: var(--accent-amber); font-weight: 600;">🟡 Sin API Key activa</span> (${data.tier2_cloud.detail})`;
 
                     document.getElementById('gemini-persisted-badge').textContent = data.tier2_cloud.available
                         ? "✅ API Key guardada de forma persistente en /dbs/credentials.json"
@@ -572,14 +609,28 @@
 
                     document.getElementById('rpi-model-name').textContent = data.tier3_rpi.model;
                     document.getElementById('rpi-status').innerHTML = data.tier3_rpi.available 
-                        ? `<span style="color: var(--accent-green);">🟢 Ollama Local Activo</span>` 
-                        : `<span style="color: var(--text-muted);">🟡 Standby / Offline</span> (${data.tier3_rpi.detail})`;
+                        ? `<span style="color: var(--accent-green); font-weight: 600;">🟢 Ollama Local Activo</span>` 
+                        : `<span style="color: var(--text-muted); font-weight: 600;">🟡 Standby / Offline</span> (${data.tier3_rpi.detail})`;
 
                     document.getElementById('active-tier-badge').textContent = `Activo: ${data.active_provider.tier} (${data.active_provider.model})`;
                 }
             } catch (err) {
                 console.warn('Error fetching system status:', err);
             }
+        }
+
+        function populatePcModelsDropdown(models, activeModel) {
+            const select = document.getElementById('pc-model-select');
+            if (!select) return;
+            select.innerHTML = '';
+            
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                if (m === activeModel) opt.selected = true;
+                select.appendChild(opt);
+            });
         }
 
         async function fetchGeminiConfig() {

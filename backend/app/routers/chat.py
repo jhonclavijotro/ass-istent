@@ -30,12 +30,15 @@ class ChatResponse(BaseModel):
 class SelectProviderRequest(BaseModel):
     provider: str  # "auto", "tier1_pc", "tier2_cloud", "tier3_rpi"
 
+class SelectPcModelRequest(BaseModel):
+    model: str
+
 class UpdatePcUrlRequest(BaseModel):
     pc_url: str
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
-    """Endpoint principal de interacción agéntica con soporte para memoria persistente e interrupción HITL"""
+    """Endpoint principal de interacción agéntica"""
     thread_id = request.thread_id or "thread_main_user"
     config = {"configurable": {"thread_id": thread_id}}
     
@@ -60,7 +63,6 @@ async def chat_endpoint(request: ChatRequest):
     try:
         final_state = await agent_graph.ainvoke(initial_state, config=config)
         
-        # Verificar si la ejecución se pausó en una interrupción HITL
         pending = final_state.get("pending_action")
         if pending and final_state.get("user_approval_status") == "PENDING":
             return ChatResponse(
@@ -91,8 +93,6 @@ async def chat_endpoint(request: ChatRequest):
 async def approve_action(request: ActionApprovalRequest):
     """Aprueba la ejecución de una acción crítica pausada por HITL y reanuda el grafo"""
     config = {"configurable": {"thread_id": request.thread_id}}
-    
-    # Actualizar estado de aprobación y reanudar grafo pasando None en entrada
     try:
         await agent_graph.aupdate_state(config, {"user_approval_status": "APPROVED", "user_approval_feedback": request.feedback})
         final_state = await agent_graph.ainvoke(None, config=config)
@@ -112,9 +112,8 @@ async def approve_action(request: ActionApprovalRequest):
 
 @router.post("/chat/reject-action", response_model=ChatResponse)
 async def reject_action(request: ActionApprovalRequest):
-    """Rechaza la ejecución de una acción crítica pausada por HITL y reanuda el grafo de forma segura"""
+    """Rechaza la ejecución de una acción crítica pausada por HITL y reanuda el grafo"""
     config = {"configurable": {"thread_id": request.thread_id}}
-    
     try:
         await agent_graph.aupdate_state(config, {"user_approval_status": "REJECTED", "user_approval_feedback": request.feedback})
         final_state = await agent_graph.ainvoke(None, config=config)
@@ -144,11 +143,20 @@ async def reset_thread_memory(thread_id: Optional[str] = "thread_main_user"):
 
 @router.post("/system/select-provider")
 def select_provider(request: SelectProviderRequest):
-    """Permite al usuario seleccionar el proveedor de LLM manualmente o activar Auto Failover"""
+    """Permite seleccionar el proveedor de LLM manualmente o activar Auto Failover"""
     llm_router.set_selected_provider(request.provider)
     return {
         "status": "success",
         "selected_provider": llm_router.selected_provider
+    }
+
+@router.post("/system/select-pc-model")
+def select_pc_model(request: SelectPcModelRequest):
+    """Permite seleccionar el modelo específico de Ollama a utilizar en el PC local"""
+    llm_router.set_pc_model(request.model)
+    return {
+        "status": "success",
+        "active_pc_model": llm_router.ollama_pc_model
     }
 
 @router.post("/system/update-pc-url")
@@ -162,11 +170,12 @@ def update_pc_url(request: UpdatePcUrlRequest):
 
 @router.get("/system/status")
 async def system_status():
-    """Retorna el estado de salud en tiempo real de los 3 niveles de la cascada y la selección activa"""
+    """Retorna el estado de salud en tiempo real de los 3 niveles y modelos disponibles en el PC"""
     pc_ok, pc_lat, pc_msg = await llm_router.check_pc_ollama_health()
     rpi_ok, rpi_lat, rpi_msg = await llm_router.check_rpi_ollama_health()
     gemini_ok, gemini_msg = await llm_router.check_gemini_health()
     active_tier, active_model, _ = await llm_router.get_active_provider()
+    pc_models = await llm_router.fetch_pc_ollama_models()
     
     return {
         "selected_provider_mode": llm_router.selected_provider,
@@ -176,7 +185,8 @@ async def system_status():
             "url": llm_router.ollama_pc_url,
             "available": pc_ok,
             "latency_ms": pc_lat,
-            "detail": pc_msg
+            "detail": pc_msg,
+            "available_models": pc_models
         },
         "tier2_cloud": {
             "name": "Gemini Cloud API",
