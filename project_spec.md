@@ -68,9 +68,9 @@ $$\text{Petición Agéntica} \longrightarrow \text{Evaluador de Salud (Circuit B
    - **Modelo:** `qwen3.5:4b`
    - **Mecanismo:** Verificación de puerto con `HTTP HEAD` y timeout de **1.5 segundos**. Si el PC está encendido y responde, la petición se procesa en el PC a máxima velocidad de VRAM.
 2. **Nivel 2 (Cloud Fallback - Prioridad Media):**
-   - **Endpoint:** Google Gemini API
-   - **Modelo:** `gemini-2.0-flash`
-   - **Mecanismo:** Si el PC no responde (offline / timeout), la solicitud se conmuta automáticamente a la API de Gemini mediante conexión a internet.
+   - **Endpoint:** Google Gemini API (`https://generativelanguage.googleapis.com`)
+   - **Modelo:** Seleccionado dinámicamente por el usuario entre los modelos disponibles asociados a su cuenta (ej. `gemini-2.0-flash`, `gemini-1.5-pro`).
+   - **Mecanismo:** La API Key se almacena de forma protegida en `/AssAntigravity/dbs/credentials.json` (`chmod 600`), fuera del control de versiones Git. Al ingresar la clave, el sistema consulta los modelos disponibles para la cuenta y permite elegirlos desde un menú desplegable en el panel web. Si el PC local falla, conmuta automáticamente al modelo de Gemini seleccionado.
 3. **Nivel 3 (Edge Fallback Offline - Prioridad de Emergencia):**
    - **Endpoint:** Ollama local en RPi 5 (`http://localhost:11434`)
    - **Modelo:** `qwen2.5:1.5b`

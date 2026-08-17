@@ -5,6 +5,8 @@ import httpx
 from typing import List, Dict, Any, Tuple
 from pydantic import BaseModel
 
+from app.core.gemini_service import gemini_service
+
 logger = logging.getLogger("llm_router")
 logging.basicConfig(level=logging.INFO)
 
@@ -18,12 +20,16 @@ class ResilientLLMRouter:
     def __init__(self):
         self.ollama_pc_url = os.getenv("OLLAMA_PC_URL", "http://192.168.1.50:11434")
         self.ollama_pc_model = os.getenv("OLLAMA_PC_MODEL", "qwen3.5:4b")
-        
-        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
-        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-        
         self.ollama_rpi_url = os.getenv("OLLAMA_RPI_URL", "http://localhost:11434")
         self.ollama_rpi_model = os.getenv("OLLAMA_RPI_MODEL", "qwen2.5:1.5b")
+
+    @property
+    def gemini_api_key(self) -> str:
+        return gemini_service.api_key
+
+    @property
+    def gemini_model(self) -> str:
+        return gemini_service.active_model
 
     async def check_pc_ollama_health(self) -> Tuple[bool, float]:
         """Verifica la conectividad con el PC local Ollama con un timeout rápido de 1.5s"""
@@ -55,7 +61,7 @@ class ResilientLLMRouter:
         """
         Determina cuál proveedor de LLM está disponible según la cascada de resiliencia:
         1. PC Local LAN (qwen3.5:4b)
-        2. Gemini Cloud API (gemini-2.0-flash)
+        2. Gemini Cloud API (dinámico según la cuenta del usuario)
         3. RPi Local Edge (qwen2.5:1.5b)
         Retorna: (tier_id, model_name, endpoint_url)
         """
