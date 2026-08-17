@@ -15,11 +15,11 @@ services:
     env_file:
       - .env
     volumes:
-      # Mounts de carpetas físicas en la Raspberry Pi 5 (/AssAntigravity)
-      - /AssAntigravity/data/pdfs:/app/data/pdfs
-      - /AssAntigravity/data/obsidian:/app/data/obsidian
-      - /AssAntigravity/data/finanzas:/app/data/finanzas
-      - /AssAntigravity/dbs:/app/dbs
+      # Mounts de carpetas físicas automáticas en el proyecto
+      - ./data/pdfs:/app/data/pdfs
+      - ./data/obsidian:/app/data/obsidian
+      - ./data/finanzas:/app/data/finanzas
+      - ./dbs:/app/dbs
     depends_on:
       - qdrant
     deploy:
@@ -44,11 +44,11 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - /AssAntigravity/dbs/qdrant_storage:/qdrant/storage
+      - ./dbs/qdrant_storage:/qdrant/storage
     deploy:
       resources:
         limits:
-          cpus: '1.50'
+          cpus: '1.00'
           memory: 512M
         reservations:
           cpus: '0.25'
@@ -57,7 +57,7 @@ services:
       - asistente-net
 
   # =========================================================================
-  # FRONTEND: Web UI Server (Nginx ARM64)
+  # FRONTEND: Nginx Web UI (Alpine ARM64)
   # =========================================================================
   frontend:
     build:
@@ -73,10 +73,10 @@ services:
       resources:
         limits:
           cpus: '0.50'
-          memory: 128M
+          memory: 256M
         reservations:
           cpus: '0.10'
-          memory: 32M
+          memory: 64M
     networks:
       - asistente-net
 
