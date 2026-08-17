@@ -17,12 +17,22 @@ from app.agents.nodes import (
 
 logger = logging.getLogger("agent_graph")
 
-# Instancia global del checkpointer de memoria de LangGraph
 memory_checkpointer = MemorySaver()
 
 def router_conditional(state: AgentState) -> str:
     """Función de enrutamiento condicional basada en la decisión del Supervisor"""
-    return state.get("current_agent", "writer_agent")
+    agent = state.get("current_agent", "writer_agent")
+    if agent in ["writer_node", "writer_agent"]:
+        return "writer_agent"
+    if agent in ["research_node", "research_agent"]:
+        return "research_agent"
+    if agent in ["obsidian_node", "obsidian_agent"]:
+        return "obsidian_agent"
+    if agent in ["finance_node", "finance_agent"]:
+        return "finance_agent"
+    if agent in ["email_node", "email_agent"]:
+        return "email_agent"
+    return agent
 
 def build_agent_graph():
     """Construye e inicializa el grafo agéntico de LangGraph con Checkpointer e Interrupciones HITL"""
@@ -84,5 +94,4 @@ def build_agent_graph():
     )
     return app_graph
 
-# Instancia global del Grafo Agéntico
 agent_graph = build_agent_graph()

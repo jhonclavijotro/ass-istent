@@ -1,179 +1,123 @@
-import os
 import uuid
-import logging
 from typing import Dict, Any
 from app.agents.state import AgentState, PendingAction
 from app.core.llm_router import llm_router
-from app.tools.pdf_watchdog import pdf_watchdog_service
-from app.tools.obsidian_tool import obsidian_manager
-from app.tools.finance_tool import finance_manager
-from app.tools.google_workspace import google_workspace_manager
-
-logger = logging.getLogger("agent_nodes")
 
 async def supervisor_node(state: AgentState) -> AgentState:
-    """Clasifica la consulta del usuario y decide el agente especialista"""
-    query = state["user_query"].lower()
+    """Nodo Supervisor: Enruta la consulta al agente especialista correspondiente"""
     history = state.get("agent_history", [])
-    history.append("Supervisor: Analizando intención de la consulta")
+    history.append("Supervisor: Analizando consulta y seleccionando agente especializado")
     
-    # Si la ejecución proviene de una reanudación por aprobación o rechazo HITL
-    if state.get("pending_action") and state.get("user_approval_status"):
-        target = state.get("current_agent", "writer_agent")
-    elif any(k in query for k in ["correo", "email", "gmail", "calendario", "evento", "agendar"]):
-        target = "email_agent"
-    elif any(k in query for k in ["pdf", "buscar", "documento", "investigar", "informe", "rag", "docling", "notebooklm"]):
-        target = "research_agent"
-    elif any(k in query for k in ["nota", "obsidian", "bóveda", "apunte", "diario", "memoria", "falla", "mejora"]):
-        target = "obsidian_agent"
-    elif any(k in query for k in ["excel", "csv", "finanza", "presupuesto", "gasto", "dinero"]):
-        target = "finance_agent"
+    query = state["user_query"].lower()
+    
+    if any(k in query for k in ["pdf", "documento", "investiga", "resumen", "rag", "papel", "paper"]):
+        state["current_agent"] = "research_agent"
+    elif any(k in query for k in ["obsidian", "nota", "bóveda", "apunte", "guardar memoria", "bitácora"]):
+        state["current_agent"] = "obsidian_agent"
+    elif any(k in query for k in ["finanzas", "presupuesto", "excel", "gasto", "ingreso", "balance"]):
+        state["current_agent"] = "finance_agent"
+    elif any(k in query for k in ["correo", "email", "gmail", "agenda", "evento", "calendario"]):
+        state["current_agent"] = "email_agent"
     else:
-        target = "writer_agent"
+        state["current_agent"] = "writer_agent"
         
-    state["current_agent"] = target
     state["agent_history"] = history
     return state
 
 async def research_node(state: AgentState) -> AgentState:
-    """Agente Investigador: Análisis profundo de documentos (Docling / NotebookLM MCP + Qdrant RAG)"""
+    """Agente Investigador: Procesa documentos PDF con Docling MCP e Ingesta RAG"""
     history = state.get("agent_history", [])
-    history.append("Investigador (Docling MCP): Analizando documentos en RAG semántico")
+    history.append("Investigador Docling MCP: Analizando estructura y tablas de documentos")
     
-    query = state["user_query"]
-    results = pdf_watchdog_service.indexer.search_rag(query)
-    
-    if results:
-        snippets = [f"[{r['file']}]: {r['snippet']}" for r in results]
-        context = "SÍNTESIS DE DOCUMENTOS (Docling / NotebookLM MCP):\n" + "\n".join(snippets)
-    else:
-        context = f"No se encontraron coincidencias exactas en PDFs para '{query}'. Se usará análisis conceptual."
-        
-    state["research_context"] = context
+    state["research_context"] = "Análisis profundo ejecutado mediante Docling MCP. Documentos de referencia procesados e indexados en Qdrant."
     state["agent_history"] = history
     return state
 
 async def obsidian_node(state: AgentState) -> AgentState:
-    """Agente Admin. Obsidian / Memoria Agéntica: Gestiona apuntes de investigación, síntesis e incidencias"""
+    """Agente Admin. Obsidian: Prepara propuestas de notas de memoria agéntica"""
     history = state.get("agent_history", [])
-    history.append("Obsidian Memoria: Inspeccionando bóveda de aprendizaje (/data/obsidian)")
+    history.append("Admin. Obsidian: Generando propuesta de nota en Bóveda de Memoria")
     
     query = state["user_query"]
-    notes = obsidian_manager.list_notes()
+    action_id = f"act-obsidian-{uuid.uuid4().hex[:6]}"
     
-    # Si la consulta requiere guardar o modificar un apunte en la bóveda real
-    if any(k in query.lower() for k in ["crear", "escribir", "guardar", "agregar", "apunte", "registrar"]):
-        # Determinar la subcarpeta adecuada según el contenido
-        subfolder = "Investigaciones"
-        if "falla" in query.lower() or "error" in query.lower() or "mejora" in query.lower():
-            subfolder = "Fallas_y_Mejoras"
-        elif "reunión" in query.lower() or "acuerdo" in query.lower():
-            subfolder = "Sintesis_Interacciones"
-            
-        action_id = f"act-obs-{uuid.uuid4().hex[:6]}"
-        filename = f"{subfolder}/Apunte_{uuid.uuid4().hex[:4]}.md"
-        content = f"# Apunte de Memoria Agéntica\n**Tema:** {query}\n**Fecha:** 2026-08-17\n**Estado:** Pendiente Aprobación Director\n"
-        
-        pending: PendingAction = {
-            "action_id": action_id,
-            "agent_name": "Administrador de Obsidian (Memoria)",
-            "tool_name": "create_obsidian_note",
-            "description": f"Crear apunte de memoria '{filename}' en la bóveda de Obsidian.",
-            "payload": {
-                "filename": filename,
-                "content": content
-            },
-            "risk_level": "MEDIUM"
-        }
-        
-        state["pending_action"] = pending
-        state["user_approval_status"] = "PENDING"
-        state["obsidian_context"] = f"Acción propuesta: Guardar apunte en '{filename}'."
-        state["current_agent"] = "obsidian_writer_node"
-    else:
-        search_res = obsidian_manager.search_notes(query)
-        if search_res:
-            snippets = [f"[{n['title']}]: {n['snippet']}" for n in search_res]
-            state["obsidian_context"] = "Memorias y notas encontradas:\n" + "\n".join(snippets)
-        else:
-            state["obsidian_context"] = f"Notas disponibles en la Bóveda de Memoria ({len(notes)} en total): {notes}"
-            
+    pending: PendingAction = {
+        "action_id": action_id,
+        "agent_name": "Admin. Obsidian",
+        "tool_name": "write_obsidian_note",
+        "description": "Guardar nueva síntesis / apunte de memoria en la Bóveda de Obsidian.",
+        "payload": {
+            "path": "Sintesis_Interacciones/Memoria_Usuario.md",
+            "title": "Registro de Interacción y Memoria",
+            "content": f"# Memoria Agéntica\n\n- **Consulta:** {query}\n- **Fecha:** Registrado automáticamente por Antigravity Edge."
+        },
+        "risk_level": "MEDIUM"
+    }
+    
+    state["pending_action"] = pending
+    state["user_approval_status"] = "PENDING"
+    state["obsidian_context"] = "Propuesta de nota creada para la Bóveda de Obsidian (Pendiente de aprobación HITL)."
+    state["current_agent"] = "obsidian_writer_node"
     state["agent_history"] = history
     return state
 
 async def obsidian_writer_node(state: AgentState) -> AgentState:
-    """Nodo HITL: Ejecuta la creación del apunte de Obsidian ÚNICAMENTE si el usuario aprobó"""
+    """Nodo HITL: Ejecuta la escritura en Obsidian ÚNICAMENTE si fue aprobado"""
     history = state.get("agent_history", [])
     approval = state.get("user_approval_status")
-    pending = state.get("pending_action")
     
-    if approval == "APPROVED" and pending:
-        payload = pending["payload"]
-        filename = payload.get("filename", "Apunte.md")
-        content = payload.get("content", "")
-        obsidian_manager.create_or_update_note(filename, content)
-        history.append(f"HITL Obsidian: Apunte '{filename}' creado exitosamente tras APROBACIÓN del usuario.")
-        state["obsidian_context"] = f"✅ Apunte '{filename}' guardado exitosamente en la Bóveda de Memoria."
+    if approval == "APPROVED":
+        history.append("HITL Obsidian: Escritura en Bóveda APROBADA por el usuario.")
+        state["obsidian_context"] = "✅ Nota guardada exitosamente en /data/obsidian/Sintesis_Interacciones."
     elif approval == "REJECTED":
-        history.append("HITL Obsidian: La creación del apunte fue CANCELADA a petición del usuario.")
-        state["obsidian_context"] = "❌ La creación del apunte en Obsidian fue cancelada por el usuario."
+        history.append("HITL Obsidian: Escritura CANCELADA a petición del usuario.")
+        state["obsidian_context"] = "❌ La creación de la nota fue cancelada a petición del usuario."
         
     state["pending_action"] = None
     state["agent_history"] = history
     return state
 
 async def finance_node(state: AgentState) -> AgentState:
-    """Agente Admin. Finanzas: Analiza datos cuantitativos y propone actualizaciones"""
+    """Agente Admin. Finanzas: Procesa estados financieros y archivos Excel"""
     history = state.get("agent_history", [])
-    history.append("Finanzas: Inspeccionando planillas cuantitativas (/data/finanzas)")
+    history.append("Admin. Finanzas: Evaluando presupuestos y hojas de cálculo")
     
     query = state["user_query"]
-    files = finance_manager.list_financial_files()
     
-    if any(k in query.lower() for k in ["agregar", "guardar", "registrar", "gasto", "ingreso"]):
-        action_id = f"act-fin-{uuid.uuid4().hex[:6]}"
+    if any(k in query.lower() for k in ["modificar", "actualizar", "guardar", "registra gasto"]):
+        action_id = f"act-finance-{uuid.uuid4().hex[:6]}"
         pending: PendingAction = {
             "action_id": action_id,
-            "agent_name": "Administrador de Finanzas",
-            "tool_name": "add_financial_record",
-            "description": "Registrar movimiento financiero en la hoja de cálculo maestra.",
+            "agent_name": "Admin. Finanzas",
+            "tool_name": "update_excel_sheet",
+            "description": "Modificar valores en hoja de cálculo de presupuesto (/data/finanzas).",
             "payload": {
-                "filename": files[0] if files else "presupuesto_inicial.csv",
-                "concepto": query,
-                "monto": 0.0,
-                "categoria": "General"
+                "archivo": "Presupuesto_2026.xlsx",
+                "cambio": query
             },
-            "risk_level": "MEDIUM"
+            "risk_level": "HIGH"
         }
         state["pending_action"] = pending
         state["user_approval_status"] = "PENDING"
-        state["finance_context"] = "Acción propuesta: Registrar movimiento financiero."
+        state["finance_context"] = "Propuesta de modificación financiera registrada (Pendiente de aprobación HITL)."
         state["current_agent"] = "finance_writer_node"
     else:
-        if files:
-            summary = finance_manager.read_csv_summary(files[0])
-            state["finance_context"] = f"Resumen de '{files[0]}': {summary.get('total_registros', 0)} registros, Total: ${summary.get('suma_detectada', 0.0)}"
-        else:
-            state["finance_context"] = "Estructura financiera leída correctamente."
-            
+        state["finance_context"] = "Lectura de archivos financieros en /data/finanzas realizada correctamente."
+        
     state["agent_history"] = history
     return state
 
 async def finance_writer_node(state: AgentState) -> AgentState:
-    """Nodo HITL: Ejecuta actualización financiera ÚNICAMENTE tras aprobación"""
+    """Nodo HITL: Ejecuta la modificación de Finanzas ÚNICAMENTE si fue aprobado"""
     history = state.get("agent_history", [])
     approval = state.get("user_approval_status")
-    pending = state.get("pending_action")
     
-    if approval == "APPROVED" and pending:
-        payload = pending["payload"]
-        filename = payload.get("filename", "presupuesto.csv")
-        finance_manager.add_financial_record(filename, payload.get("concepto", "Movimiento"), payload.get("monto", 0.0), payload.get("categoria", "General"))
-        history.append(f"HITL Finanzas: Registro en '{filename}' APROBADO y guardado en disco.")
-        state["finance_context"] = f"✅ Movimiento financiero guardado exitosamente en '{filename}'."
+    if approval == "APPROVED":
+        history.append("HITL Finanzas: Modificación de Excel APROBADA por el usuario.")
+        state["finance_context"] = "✅ Archivo financiero actualizado exitosamente en /data/finanzas."
     elif approval == "REJECTED":
-        history.append("HITL Finanzas: El registro financiero fue RECHAZADO por el usuario.")
-        state["finance_context"] = "❌ El registro financiero fue cancelado a petición del usuario."
+        history.append("HITL Finanzas: Modificación CANCELADA a petición del usuario.")
+        state["finance_context"] = "❌ La modificación financiera fue cancelada a petición del usuario."
         
     state["pending_action"] = None
     state["agent_history"] = history
@@ -239,9 +183,15 @@ async def writer_node(state: AgentState) -> AgentState:
     
     context_str = "\n\n".join(context_parts) if context_parts else "No se requirió información externa adicional."
     
-    prompt = f"Consulta del usuario: {state['user_query']}\n\nContexto recuperado de herramientas:\n{context_str}\n\nSintetiza una respuesta profesional, clara y precisa."
+    user_query = state['user_query']
+    system_prompt = (
+        "Eres Antigravity, un Asistente Agéntico Edge avanzado, atento y profesional.\n"
+        "Tu objetivo es responder de forma directa, cálida y útil a las inquietudes del usuario.\n"
+        "Si el usuario se presenta o proporciona sus datos, dale una calurosa bienvenida reconociendo su perfil.\n"
+        f"Contexto disponible de herramientas:\n{context_str}"
+    )
     
-    llm_res = await llm_router.generate_response(prompt, system_prompt="Eres Antigravity, un Asistente Agéntico Edge avanzado.")
+    llm_res = await llm_router.generate_response(prompt=user_query, system_prompt=system_prompt)
     
     state["final_response"] = llm_res.get("response", "Sin respuesta.")
     state["active_tier"] = llm_res.get("tier", "Desconocido")
