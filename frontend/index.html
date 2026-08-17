@@ -199,7 +199,6 @@
             <p style="color: var(--text-muted); margin-top: 0.25rem;">Monitoreo en tiempo real y selección de proveedores de inferencia.</p>
 
             <div class="grid">
-                <!-- CARD PC LOCAL OLLAMA -->
                 <div class="card">
                     <div class="card-title">Prioridad 1: PC Local LAN (Ollama)</div>
                     <div class="card-value" id="pc-model-name">qwen3.5:4b</div>
@@ -221,7 +220,6 @@
                     </div>
                 </div>
 
-                <!-- CARD GEMINI CLOUD -->
                 <div class="card">
                     <div class="card-title">Prioridad 2: Cloud Gemini API</div>
                     <div class="card-value" id="gemini-active-model">gemini-2.0-flash</div>
@@ -229,7 +227,6 @@
                     <div style="font-size: 0.8rem; color: var(--accent-green); margin-top: 0.5rem;" id="gemini-persisted-badge">✅ Credenciales persistidas en /dbs/credentials.json</div>
                 </div>
 
-                <!-- CARD RPI EDGE -->
                 <div class="card">
                     <div class="card-title">Prioridad 3: Edge Fallback RPi</div>
                     <div class="card-value" id="rpi-model-name">qwen2.5:1.5b</div>
@@ -237,7 +234,6 @@
                 </div>
             </div>
 
-            <!-- GESTIÓN DE GEMINI API KEY -->
             <div class="card" style="margin-top: 2rem;">
                 <h3>🔑 Gestión de Gemini API Key y Selección de Modelo</h3>
                 <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
@@ -487,11 +483,16 @@
                         renderAgentMessage(data);
                     }
                 } else {
-                    showAgentErrorMessage("Error al obtener respuesta del servidor agéntico.");
+                    let errDetail = "Fallo en la comunicación con la API agéntica.";
+                    try {
+                        const errData = await res.json();
+                        if (errData.detail) errDetail = errData.detail;
+                    } catch(e) {}
+                    showAgentErrorMessage(`Error HTTP ${res.status}: ${errDetail}`);
                 }
             } catch (err) {
                 document.getElementById('loading-msg')?.remove();
-                showAgentErrorMessage("Error de conexión con el backend FastAPI.");
+                showAgentErrorMessage("Error de red al conectar con el backend FastAPI.");
             }
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
@@ -593,7 +594,6 @@
                         ? `<span style="color: var(--accent-green); font-weight: 600;">🟢 Conectado</span> (${data.tier1_pc.detail})` 
                         : `<span style="color: #ef4444; font-weight: 600;">🔴 Inalcanzable</span> (${data.tier1_pc.detail})`;
 
-                    // Poblar modelos de PC si están disponibles
                     if (data.tier1_pc.available_models && data.tier1_pc.available_models.length) {
                         populatePcModelsDropdown(data.tier1_pc.available_models, data.tier1_pc.model);
                     }
