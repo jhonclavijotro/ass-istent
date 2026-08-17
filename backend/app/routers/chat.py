@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.agents.graph import agent_graph
@@ -12,13 +12,20 @@ class ChatRequest(BaseModel):
     message: str
     thread_id: Optional[str] = None
 
+class ActionApprovalRequest(BaseModel):
+    thread_id: str
+    action_id: str
+    feedback: Optional[str] = None
+
 class ChatResponse(BaseModel):
+    status: str  # "COMPLETED" | "AWAITING_USER_APPROVAL"
     response: str
     thread_id: str
     active_tier: str
     active_model: str
     agent_path: List[str]
     latency_ms: float
+    pending_action: Optional[Dict[str, Any]] = None
 
 class SelectProviderRequest(BaseModel):
     provider: str  # "auto", "tier1_pc", "tier2_cloud", "tier3_rpi"
@@ -28,7 +35,7 @@ class UpdatePcUrlRequest(BaseModel):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
-    """Endpoint principal de interacción agéntica con memoria persistente por hilo"""
+    """Endpoint principal de interacción agéntica con soporte para memoria persistente e interrupción HITL"""
     thread_id = request.thread_id or "thread_main_user"
     config = {"configurable": {"thread_id": thread_id}}
     
@@ -42,22 +49,88 @@ async def chat_endpoint(request: ChatRequest):
         "research_context": None,
         "obsidian_context": None,
         "finance_context": None,
+        "email_context": None,
+        "pending_action": None,
+        "user_approval_status": None,
+        "user_approval_feedback": None,
         "final_response": None,
         "latency_ms": 0.0
     }
     
     try:
         final_state = await agent_graph.ainvoke(initial_state, config=config)
+        
+        # Verificar si la ejecución se pausó en una interrupción HITL
+        pending = final_state.get("pending_action")
+        if pending and final_state.get("user_approval_status") == "PENDING":
+            return ChatResponse(
+                status="AWAITING_USER_APPROVAL",
+                response=f"⚠️ El agente **{pending.get('agent_name')}** requiere tu aprobación para ejecutar: *{pending.get('description')}*",
+                thread_id=thread_id,
+                active_tier="Harness Safety Control",
+                active_model="Human-In-The-Loop",
+                agent_path=final_state.get("agent_history", []),
+                latency_ms=0.0,
+                pending_action=pending
+            )
+            
         return ChatResponse(
+            status="COMPLETED",
             response=final_state.get("final_response", "No se pudo generar respuesta."),
             thread_id=thread_id,
             active_tier=final_state.get("active_tier", "Desconocido"),
             active_model=final_state.get("active_model", "Desconocido"),
             agent_path=final_state.get("agent_history", []),
-            latency_ms=final_state.get("latency_ms", 0.0)
+            latency_ms=final_state.get("latency_ms", 0.0),
+            pending_action=None
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en la ejecución agéntica: {str(e)}")
+
+@router.post("/chat/approve-action", response_model=ChatResponse)
+async def approve_action(request: ActionApprovalRequest):
+    """Aprueba la ejecución de una acción crítica pausada por HITL y reanuda el grafo"""
+    config = {"configurable": {"thread_id": request.thread_id}}
+    
+    # Actualizar estado de aprobación y reanudar grafo pasando None en entrada
+    try:
+        await agent_graph.aupdate_state(config, {"user_approval_status": "APPROVED", "user_approval_feedback": request.feedback})
+        final_state = await agent_graph.ainvoke(None, config=config)
+        
+        return ChatResponse(
+            status="COMPLETED",
+            response=final_state.get("final_response", "Acción aprobada y ejecutada exitosamente."),
+            thread_id=request.thread_id,
+            active_tier=final_state.get("active_tier", "Desconocido"),
+            active_model=final_state.get("active_model", "Desconocido"),
+            agent_path=final_state.get("agent_history", []),
+            latency_ms=final_state.get("latency_ms", 0.0),
+            pending_action=None
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al reanudar acción aprobada: {str(e)}")
+
+@router.post("/chat/reject-action", response_model=ChatResponse)
+async def reject_action(request: ActionApprovalRequest):
+    """Rechaza la ejecución de una acción crítica pausada por HITL y reanuda el grafo de forma segura"""
+    config = {"configurable": {"thread_id": request.thread_id}}
+    
+    try:
+        await agent_graph.aupdate_state(config, {"user_approval_status": "REJECTED", "user_approval_feedback": request.feedback})
+        final_state = await agent_graph.ainvoke(None, config=config)
+        
+        return ChatResponse(
+            status="COMPLETED",
+            response=final_state.get("final_response", "La acción fue cancelada a petición del usuario."),
+            thread_id=request.thread_id,
+            active_tier=final_state.get("active_tier", "Desconocido"),
+            active_model=final_state.get("active_model", "Desconocido"),
+            agent_path=final_state.get("agent_history", []),
+            latency_ms=final_state.get("latency_ms", 0.0),
+            pending_action=None
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al cancelar acción: {str(e)}")
 
 @router.post("/chat/reset-thread")
 async def reset_thread_memory(thread_id: Optional[str] = "thread_main_user"):
