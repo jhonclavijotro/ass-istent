@@ -35,7 +35,6 @@ class FinanceManager:
                 headers = reader.fieldnames or []
                 for row in reader:
                     rows.append(row)
-                    # Intentar sumar valores numéricos si existe columna 'monto' o 'valor'
                     for col in ["monto", "valor", "precio", "amount"]:
                         if col in row and row[col]:
                             try:
@@ -53,8 +52,17 @@ class FinanceManager:
             logger.error(f"Error al leer archivo CSV '{filename}': {e}")
             return {"error": str(e)}
 
-    def add_financial_record(self, filename: str, concepto: str, monto: float, categoria: str = "General") -> bool:
-        """Agrega un nuevo registro financiero a un archivo CSV"""
+    def add_financial_record_extended(
+        self,
+        filename: str = "Registro_Financiero.csv",
+        fecha: str = "2026-08-14",
+        concepto: str = "Ingreso",
+        monto: float = 0.0,
+        tipo: str = "Ingreso",
+        entidad: str = "Davivienda",
+        categoria: str = "Salario"
+    ) -> bool:
+        """Agrega un registro financiero completo a un archivo CSV"""
         if not filename.endswith(".csv"):
             filename += ".csv"
         file_path = os.path.join(self.dir_path, filename)
@@ -62,20 +70,73 @@ class FinanceManager:
         
         try:
             with open(file_path, "a", newline="", encoding="utf-8") as f:
-                fieldnames = ["fecha", "concepto", "monto", "categoria"]
+                fieldnames = ["fecha", "concepto", "monto", "tipo", "entidad", "categoria"]
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 if not file_exists:
                     writer.writeheader()
                 writer.writerow({
-                    "fecha": os.getenv("CURRENT_DATE", "2026-08-17"),
+                    "fecha": fecha,
                     "concepto": concepto,
-                    "monto": str(monto),
+                    "monto": f"{monto:.2f}",
+                    "tipo": tipo,
+                    "entidad": entidad,
                     "categoria": categoria
                 })
-            logger.info(f"Registro financiero agregado a '{filename}': {concepto} - ${monto}")
+            logger.info(f"Registro financiero agregado a '{filename}': {concepto} - ${monto} ({entidad})")
             return True
         except Exception as e:
             logger.error(f"Error al escribir en archivo financiero '{filename}': {e}")
             return False
+
+    def add_financial_record(self, filename: str, concepto: str, monto: float, categoria: str = "General") -> bool:
+        return self.add_financial_record_extended(filename=filename, fecha="2026-08-17", concepto=concepto, monto=monto, tipo="Ingreso" if monto>=0 else "Gasto", entidad="General", categoria=categoria)
+
+    def get_all_balances(self) -> Dict[str, Any]:
+        """Calcula el saldo consolidado leyendo todos los archivos CSV de finanzas"""
+        files = self.list_financial_files()
+        total_ingresos = 0.0
+        total_gastos = 0.0
+        registros = []
+        cuentas = {}
+
+        for f in files:
+            if not f.endswith(".csv"): continue
+            path = os.path.join(self.dir_path, f)
+            try:
+                with open(path, "r", encoding="utf-8") as fp:
+                    reader = csv.DictReader(fp)
+                    for r in reader:
+                        m_str = r.get("monto", "0").replace("$", "").replace(",", "").strip()
+                        try:
+                            val = float(m_str)
+                        except ValueError:
+                            val = 0.0
+
+                        tipo = r.get("tipo", "").capitalize()
+                        entidad = r.get("entidad", "Davivienda").capitalize()
+                        if not tipo:
+                            tipo = "Ingreso" if val >= 0 else "Gasto"
+                            val = abs(val)
+
+                        if tipo == "Ingreso":
+                            total_ingresos += val
+                            cuentas[entidad] = cuentas.get(entidad, 0.0) + val
+                        else:
+                            total_gastos += val
+                            cuentas[entidad] = cuentas.get(entidad, 0.0) - val
+
+                        registros.append(r)
+            except Exception as e:
+                logger.error(f"Error procesando '{f}': {e}")
+
+        saldo_neto = total_ingresos - total_gastos
+        return {
+            "total_ingresos": round(total_ingresos, 2),
+            "total_gastos": round(total_gastos, 2),
+            "saldo_neto": round(saldo_neto, 2),
+            "desglose_cuentas": cuentas,
+            "total_transacciones": len(registros),
+            "ultimas_transacciones": registros[-5:]
+        }
 
 finance_manager = FinanceManager()

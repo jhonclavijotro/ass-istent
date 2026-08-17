@@ -117,7 +117,8 @@ def build_agent_graph():
     workflow.add_edge("obsidian_agent", "obsidian_writer_node")
     workflow.add_edge("obsidian_writer_node", "writer_agent")
     
-    workflow.add_edge("finance_agent", "finance_writer_node")
+    # El agente de finanzas se conecta directamente al redactor (a menos que requiera HITL explícito)
+    workflow.add_edge("finance_agent", "writer_agent")
     workflow.add_edge("finance_writer_node", "writer_agent")
     
     workflow.add_edge("email_agent", "email_action_node")
