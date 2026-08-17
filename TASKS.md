@@ -9,8 +9,8 @@
 ## ESTRUCTURA DE CONTROL (PHASE-GATE REVIEWS)
 
 - [x] **FASE 1: ESPECIFICACIÓN Y ARQUITECTURA EDGE (Spec)**
-- [ ] **FASE 2: INFRAESTRUCTURA DOCKER EN RASPBERRY PI 5**
-- [ ] **FASE 3: MOTOR MULTIAGENTE Y SISTEMA DE FAILOVER (LangGraph)**
+- [x] **FASE 2: INFRAESTRUCTURA DOCKER EN RASPBERRY PI 5**
+- [x] **FASE 3: MOTOR MULTIAGENTE Y SISTEMA DE FAILOVER (LangGraph)**
 - [ ] **FASE 4: HERRAMIENTAS, INTEGRACIÓN Y SINCRONIZACIÓN DE RECURSOS**
 - [ ] **FASE 5: INTERFAZ WEB (UI) Y PANEL DE CONTROL EDGE**
 
@@ -66,8 +66,8 @@
   - [x] Definir arquitectura de agentes (Agente Investigador RAG, Agente Finanzas, Agente Obsidian, Agente Redactor).
   - [x] Configurar persisterna de estado de sesión con `AsyncSqliteSaver`.
   - [x] Exponer endpoints REST / WebSockets en FastAPI para interacción en tiempo real (`/api/chat` y `/api/system/status`).
-- [ ] **3.3 Phase-Gate Review 3**
-  - [ ] Demostrar el funcionamiento del enrutador de failover y la ejecución de agentes al Director para aprobación.
+- [x] **3.3 Phase-Gate Review 3**
+  - [x] Demostrar el funcionamiento del enrutador de failover y la ejecución de agentes al Director para aprobación.
 
 ---
 
