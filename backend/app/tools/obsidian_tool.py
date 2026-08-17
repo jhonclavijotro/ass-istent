@@ -19,10 +19,6 @@ class ObsidianVaultManager:
         rel_files = [os.path.relpath(f, self.vault_dir) for f in files]
         return rel_files
 
-    def read_note(self) -> Dict[str, Any]:
-        """Lee el contenido de una nota específica en la bóveda"""
-        pass
-
     def get_note_content(self, filename: str) -> Optional[str]:
         """Lee y devuelve el texto plano de la nota"""
         if not filename.endswith(".md"):
@@ -38,17 +34,21 @@ class ObsidianVaultManager:
             return None
 
     def create_or_update_note(self, filename: str, content: str, append: bool = False) -> bool:
-        """Crea una nueva nota Markdown o la actualiza en la bóveda"""
+        """Crea una nueva nota Markdown o la actualiza en la bóveda, creando subcarpetas automáticamente"""
         if not filename.endswith(".md"):
             filename += ".md"
         full_path = os.path.join(self.vault_dir, filename)
+        
+        # Garantizar que subcarpetas como Sintesis_Interacciones/, Investigaciones/, etc. existan
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
         mode = "a" if append else "w"
         try:
             with open(full_path, mode, encoding="utf-8") as f:
                 if append and os.path.exists(full_path) and os.path.getsize(full_path) > 0:
                     f.write("\n\n")
                 f.write(content)
-            logger.info(f"Nota Obsidian '{filename}' {'actualizada' if append else 'creada'}.")
+            logger.info(f"Nota Obsidian '{filename}' {'actualizada' if append else 'creada'} en '{full_path}'.")
             return True
         except Exception as e:
             logger.error(f"Error al escribir nota Obsidian '{filename}': {e}")

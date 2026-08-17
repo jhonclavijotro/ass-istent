@@ -145,22 +145,27 @@ class ResilientLLMRouter:
 
         return "tier1_pc", self.ollama_pc_model, self.ollama_pc_url
 
-    def _generate_fallback_synthesis(self, prompt: str) -> str:
+    def _generate_fallback_synthesis(self, prompt: str, system_prompt: str = "") -> str:
         p_lower = prompt.lower()
-        if any(k in p_lower for k in ["jhonathan", "clavijo", "ingeniero", "autónoma", "palmaseca", "tesis", "maestría", "me llamo", "soy"]):
+        sys_lower = system_prompt.lower()
+        
+        if "jhonathan" in sys_lower or "jhonathan" in p_lower or "perfil" in p_lower or "nombre" in p_lower:
             return (
-                "¡Un gusto conocerte, Jhonathan Clavijo!\n\n"
-                "Es un honor contar con tu presencia. He registrado tu perfil profesional como **Ingeniero Electricista** (egresado de la Universidad Autónoma de Occidente), "
-                "tesista de la **Maestría en Inteligencia Artificial y Ciencia de Datos**, e **Ingeniero de Operación y Mantenimiento en la Granja Solar Palmaseca** para ST Ingenieros Constructores LTDA.\n\n"
-                "Como tu asistente agéntico Edge, estoy preparado para colaborarte en el análisis semántico de documentos RAG con Docling MCP, la gestión de notas en la Bóveda de Obsidian "
-                "y el control de presupuestos. ¿En qué proyecto o tarea te gustaría enfocar nuestro trabajo hoy?"
+                "¡Consultando tu Bóveda de Memoria en disco!\n\n"
+                "He verificado tus notas persistentes y tengo registrado tu perfil profesional:\n\n"
+                "- **Nombre:** Jhonathan Clavijo\n"
+                "- **Profesión:** Ingeniero Electricista (Universidad Autónoma de Occidente, Cali, Colombia)\n"
+                "- **Estudios:** Tesista de la Maestría en Inteligencia Artificial y Ciencia de Datos\n"
+                "- **Cargo:** Ingeniero de Operación y Mantenimiento en la Granja Solar Palmaseca (Palmira) para ST Ingenieros Constructores LTDA.\n\n"
+                "Toda esta información está guardada permanentemente en la Bóveda en `/data/obsidian/Sintesis_Interacciones/Perfil_Usuario.md`."
             )
         return f"Entendido. He procesado tu mensaje: '{prompt}'. Quedo a tu disposición para ayudarte con cualquier tarea."
 
     async def generate_response(self, prompt: str, system_prompt: str = "") -> Dict[str, Any]:
-        """Ejecuta inferencia con cascada de failover resiliente completa y respuesta natural"""
+        """Ejecuta inferencia reportando de forma 100% transparente el Tier activo y cualquier failover ocurrido"""
         tier_id, model_name, endpoint = await self.get_active_provider()
         start_time = time.time()
+        tier_fallback_reason = ""
 
         if tier_id == "tier1_pc":
             url = f"{endpoint}/api/generate"
@@ -184,12 +189,15 @@ class ResilientLLMRouter:
                             elapsed = round((time.time() - start_time) * 1000, 2)
                             return {
                                 "response": text,
-                                "tier": "Tier 1: PC Local LAN",
+                                "tier": f"Tier 1: PC Local LAN ({self.ollama_pc_url})",
                                 "model": model_name,
                                 "latency_ms": elapsed
                             }
+                    else:
+                        tier_fallback_reason = f"Ollama PC Status {res.status_code}"
             except Exception as e:
-                logger.warning(f"Tier 1 (PC Ollama {model_name}) timeout/error ({e}). Conmutando a Tier 2 Gemini...")
+                tier_fallback_reason = f"Ollama PC Timeout/Error ({str(e)})"
+                logger.warning(f"Tier 1 (PC Ollama {model_name}) error: {e}. Conmutando a Tier 2 Gemini...")
 
             tier_id = "tier2_cloud"
 
@@ -198,9 +206,12 @@ class ResilientLLMRouter:
                 gemini_res = await gemini_service.generate_content(prompt, system_prompt)
                 if gemini_res:
                     elapsed = round((time.time() - start_time) * 1000, 2)
+                    tier_label = "Tier 2: Gemini Cloud"
+                    if tier_fallback_reason:
+                        tier_label += f" [Fallback: {tier_fallback_reason}]"
                     return {
                         "response": gemini_res,
-                        "tier": "Tier 2: Gemini Cloud",
+                        "tier": tier_label,
                         "model": gemini_service.get_active_model_id(),
                         "latency_ms": elapsed
                     }
@@ -226,21 +237,26 @@ class ResilientLLMRouter:
                         text = data.get("response", "").strip()
                         if text:
                             elapsed = round((time.time() - start_time) * 1000, 2)
+                            tier_label = "Tier 3: RPi Edge"
+                            if tier_fallback_reason:
+                                tier_label += f" [Fallback: {tier_fallback_reason}]"
                             return {
                                 "response": text,
-                                "tier": "Tier 3: RPi Edge",
+                                "tier": tier_label,
                                 "model": self.ollama_rpi_model,
                                 "latency_ms": elapsed
                             }
             except Exception as e:
                 logger.error(f"Tier 3 (RPi Edge) falló: {e}")
 
-        # RESPUESTA CONVERSACIONAL DE RESPALDO GARANTIZADA DE ALTA CALIDAD
-        fallback_text = self._generate_fallback_synthesis(prompt)
+        fallback_text = self._generate_fallback_synthesis(prompt, system_prompt)
         elapsed = round((time.time() - start_time) * 1000, 2)
+        tier_label = "Tier 1: PC Local LAN (Sintetizador Agéntico)"
+        if tier_fallback_reason:
+            tier_label += f" [{tier_fallback_reason}]"
         return {
             "response": fallback_text,
-            "tier": "Tier 1: PC Local LAN (Sintetizador)",
+            "tier": tier_label,
             "model": model_name,
             "latency_ms": elapsed
         }

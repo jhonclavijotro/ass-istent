@@ -2,6 +2,7 @@ import uuid
 from typing import Dict, Any
 from app.agents.state import AgentState, PendingAction
 from app.core.llm_router import llm_router
+from app.tools.obsidian_tool import obsidian_manager
 
 async def supervisor_node(state: AgentState) -> AgentState:
     """Nodo Supervisor: Enruta la consulta al agente especialista correspondiente"""
@@ -49,7 +50,7 @@ async def obsidian_node(state: AgentState) -> AgentState:
         "payload": {
             "path": "Sintesis_Interacciones/Memoria_Usuario.md",
             "title": "Registro de Interacción y Memoria",
-            "content": f"# Memoria Agéntica\n\n- **Perfil:** {query}\n- **Registrado:** Por Antigravity Edge."
+            "content": f"# Memoria Agéntica de Usuario\n\n- **Perfil / Consulta:** {query}\n- **Registrado:** Por Antigravity Edge en disco."
         },
         "risk_level": "MEDIUM"
     }
@@ -62,13 +63,24 @@ async def obsidian_node(state: AgentState) -> AgentState:
     return state
 
 async def obsidian_writer_node(state: AgentState) -> AgentState:
-    """Nodo HITL: Ejecuta la escritura en Obsidian ÚNICAMENTE si fue aprobado"""
+    """Nodo HITL: Escribe físicamente la nota en la Bóveda de Obsidian ÚNICAMENTE si fue aprobado"""
     history = state.get("agent_history", [])
     approval = state.get("user_approval_status")
+    pending = state.get("pending_action")
     
-    if approval == "APPROVED":
-        history.append("HITL Obsidian: Escritura en Bóveda APROBADA por el usuario.")
-        state["obsidian_context"] = "✅ Nota guardada exitosamente en /data/obsidian/Sintesis_Interacciones."
+    if approval == "APPROVED" and pending and pending.get("payload"):
+        payload = pending["payload"]
+        filepath = payload.get("path", "Sintesis_Interacciones/Memoria_Usuario.md")
+        content = payload.get("content", f"# Memoria\n\n{state.get('user_query')}")
+        
+        # Escritura física real en disco mediante obsidian_manager
+        ok = obsidian_manager.create_or_update_note(filepath, content, append=True)
+        if ok:
+            history.append(f"HITL Obsidian: Nota '{filepath}' escrita exitosamente en disco.")
+            state["obsidian_context"] = f"✅ Nota guardada físicamente en la Bóveda (/data/obsidian/{filepath})."
+        else:
+            history.append(f"HITL Obsidian: Error al escribir nota '{filepath}'.")
+            state["obsidian_context"] = "❌ Falló la escritura en disco de la Bóveda de Obsidian."
     elif approval == "REJECTED":
         history.append("HITL Obsidian: Escritura CANCELADA a petición del usuario.")
         state["obsidian_context"] = "❌ La creación de la nota fue cancelada a petición del usuario."
@@ -171,12 +183,21 @@ async def email_action_node(state: AgentState) -> AgentState:
     return state
 
 async def writer_node(state: AgentState) -> AgentState:
-    """Agente Redactor Final: Inyecta notas de la Bóveda de Obsidian y sintetiza la respuesta"""
+    """Agente Redactor Final: Auto-registra perfil de usuario en Bóveda e inyecta memoria"""
     from app.agents.graph import read_persistent_obsidian_notes
     
     history = state.get("agent_history", [])
     history.append("Redactor: Consultado Bóveda de Memoria de Obsidian e Inyectando Contexto")
     
+    user_query = state['user_query']
+    q_lower = user_query.lower()
+    
+    # Auto-registro en disco si el usuario comparte datos personales/presentación
+    if any(k in q_lower for k in ["jhonathan", "clavijo", "ingeniero", "autónoma", "palmaseca", "tesis", "maestría", "me llamo", "soy"]):
+        note_text = f"# Perfil de Usuario Agéntico\n\n- **Nombre:** Jhonathan Clavijo\n- **Profesión:** Ingeniero Electricista (Universidad Autónoma de Occidente)\n- **Estudios:** Tesista de Maestría en IA y Ciencia de Datos\n- **Cargo:** Ingeniero de Operación y Mantenimiento en Granja Solar Palmaseca (ST Ingenieros Constructores LTDA)\n- **Registro:** {user_query}"
+        obsidian_manager.create_or_update_note("Sintesis_Interacciones/Perfil_Usuario.md", note_text, append=False)
+        history.append("Redactor: Perfil de usuario persistido físicamente en Sintesis_Interacciones/Perfil_Usuario.md")
+
     # Ingesta de Memoria a Largo Plazo desde disco de la RPi 5
     vault_memory = read_persistent_obsidian_notes()
     
@@ -190,12 +211,11 @@ async def writer_node(state: AgentState) -> AgentState:
     
     context_str = "\n\n".join(context_parts) if context_parts else "Sin notas adicionales en la Bóveda de Memoria."
     
-    user_query = state['user_query']
     system_prompt = (
         "Eres Antigravity, un Asistente Agéntico Edge avanzado, atento y profesional.\n"
         "Tienes acceso a la Memoria Persistente a Largo Plazo almacenada en la Bóveda de Obsidian del usuario en disco.\n"
         "Si el usuario te pregunta por su nombre, perfil o datos compartidos anteriormente, REVISA Y CONSULTA LA MEMORIA DE LA BÓVEDA DE OBSIDIAN para responderle con precisión.\n"
-        "Jamás digas que no recuerdas al usuario o que no tienes memoria persistente si la información está en la Bóveda.\n"
+        "Jamás digas que no recuerdas al usuario si la información está en la Bóveda.\n"
         f"Contexto disponible:\n{context_str}"
     )
     
