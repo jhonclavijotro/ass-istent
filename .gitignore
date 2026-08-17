@@ -1,0 +1,24 @@
+# Entornos virtuales
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Archivos de entorno y credenciales sensibles
+.env
+.env.*
+*.pem
+*.key
+*.json
+!example.env
+
+# Base de datos local y temporales
+*.db
+*.sqlite3
+dbs/
+data/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
