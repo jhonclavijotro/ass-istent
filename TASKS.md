@@ -49,23 +49,23 @@
 - [x] **2.2 Pruebas de Despliegue de Infraestructura**
   - [x] Validar compatibilidad de imágenes Docker en entorno ARM64 (`python:3.11-slim`, `qdrant/qdrant`, `nginx:alpine`).
   - [x] Verificar estructura de volúmenes locales y plantilla de configuración `.env.example`.
-- [ ] **2.3 Phase-Gate Review 2**
-  - [ ] Presentar infraestructura Docker desplegada al Director del Proyecto para aprobación.
+- [x] **2.3 Phase-Gate Review 2**
+  - [x] Presentar infraestructura Docker desplegada al Director del Proyecto para aprobación.
 
 ---
 
 ### FASE 3: MOTOR MULTIAGENTE Y FAILOVER (LangGraph)
 > **Objetivo:** Construir el servidor Backend en FastAPI con LangGraph y el enrutador de modelos tolerante a fallos.
 
-- [ ] **3.1 Desarrollo del Enrutador de LLM con Failover Resiliente (3 Capas)**
-  - [ ] Implementar cliente de inferencia Prioridad 1: PC Ollama LAN (`http://<PC_IP>:11434`) ejecutando `qwen3.5:4b` con timeout rápido (< 2.0s).
-  - [ ] Implementar cliente de inferencia Prioridad 2: Fallback a Gemini API (`gemini-2.0-flash`).
-  - [ ] Implementar cliente de inferencia Prioridad 3: Fallback a Ollama local RPi (`qwen2.5:1.5b`).
-  - [ ] Pruebas unitarias e integración del Circuit Breaker de Failover.
-- [ ] **3.2 Orquestación Multiagente con LangGraph**
-  - [ ] Definir arquitectura de agentes (Agente Investigador RAG, Agente Finanzas, Agente Obsidian, Agente Redactor).
-  - [ ] Configurar persisterna de estado de sesión con `AsyncSqliteSaver`.
-  - [ ] Exponer endpoints REST / WebSockets en FastAPI para interacción en tiempo real.
+- [x] **3.1 Desarrollo del Enrutador de LLM con Failover Resiliente (3 Capas)**
+  - [x] Implementar cliente de inferencia Prioridad 1: PC Ollama LAN (`http://<PC_IP>:11434`) ejecutando `qwen3.5:4b` con timeout rápido (< 2.0s).
+  - [x] Implementar cliente de inferencia Prioridad 2: Fallback a Gemini API (`gemini-2.0-flash`).
+  - [x] Implementar cliente de inferencia Prioridad 3: Fallback a Ollama local RPi (`qwen2.5:1.5b`).
+  - [x] Pruebas unitarias e integración del Circuit Breaker de Failover.
+- [x] **3.2 Orquestación Multiagente con LangGraph**
+  - [x] Definir arquitectura de agentes (Agente Investigador RAG, Agente Finanzas, Agente Obsidian, Agente Redactor).
+  - [x] Configurar persisterna de estado de sesión con `AsyncSqliteSaver`.
+  - [x] Exponer endpoints REST / WebSockets en FastAPI para interacción en tiempo real (`/api/chat` y `/api/system/status`).
 - [ ] **3.3 Phase-Gate Review 3**
   - [ ] Demostrar el funcionamiento del enrutador de failover y la ejecución de agentes al Director para aprobación.
 
