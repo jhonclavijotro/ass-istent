@@ -23,295 +23,95 @@
             --chat-agent-bg: #1e293b;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
 
         header {
-            background: rgba(30, 41, 59, 0.85);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color); padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
         }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--accent-blue);
-        }
+        .brand { display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; font-weight: 700; color: var(--accent-blue); }
 
         .nav-tabs {
-            display: flex;
-            gap: 0.5rem;
-            background: #0f172a;
-            padding: 0.25rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
+            display: flex; gap: 0.5rem; background: #0f172a; padding: 0.25rem;
+            border-radius: 12px; border: 1px solid var(--border-color);
         }
 
         .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            padding: 0.5rem 1.25rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            background: transparent; border: none; color: var(--text-muted);
+            padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 600;
+            font-size: 0.875rem; cursor: pointer; transition: all 0.2s ease;
         }
 
         .tab-btn:hover { color: var(--text-main); }
-        .tab-btn.active {
-            background: var(--card-bg);
-            color: var(--accent-blue);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
+        .tab-btn.active { background: var(--card-bg); color: var(--accent-blue); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
 
         .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--accent-green);
-            padding: 0.35rem 0.85rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            border: 1px solid rgba(34, 197, 94, 0.3);
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: rgba(34, 197, 94, 0.15); color: var(--accent-green);
+            padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.875rem;
+            font-weight: 600; border: 1px solid rgba(34, 197, 94, 0.3);
         }
 
-        .dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--accent-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
+        .dot { width: 8px; height: 8px; background-color: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
 
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        main {
-            flex: 1;
-            padding: 2rem;
-            max-width: 1300px;
-            margin: 0 auto;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
+        main { flex: 1; padding: 2rem; max-width: 1300px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; }
         .tab-content { display: none; flex-direction: column; flex: 1; }
         .tab-content.active { display: flex; }
 
         /* CHAT STYLES */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 75vh;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            overflow: hidden;
-        }
+        .chat-container { display: flex; flex-direction: column; height: 75vh; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; }
 
         .chat-header {
-            padding: 1rem 1.5rem;
-            background: #0f172a;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 1rem 1.5rem; background: #0f172a; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
         }
 
         .active-tier-tag {
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 0.25rem 0.65rem;
-            border-radius: 6px;
-            background: rgba(56, 189, 248, 0.15);
-            color: var(--accent-blue);
-            border: 1px solid rgba(56, 189, 248, 0.3);
+            font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 6px;
+            background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.3);
         }
 
-        .chat-messages {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
-
-        .message {
-            display: flex;
-            flex-direction: column;
-            max-width: 85%;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .chat-messages { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem; }
+        .message { display: flex; flex-direction: column; max-width: 85%; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
         .message.user { align-self: flex-end; }
         .message.agent { align-self: flex-start; }
 
-        .bubble {
-            padding: 1rem 1.25rem;
-            border-radius: 14px;
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
+        .bubble { padding: 1rem 1.25rem; border-radius: 14px; font-size: 0.95rem; line-height: 1.5; }
+        .message.user .bubble { background: var(--chat-user-bg); color: #ffffff; border-bottom-right-radius: 2px; }
+        .message.agent .bubble { background: #0f172a; color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 2px; }
 
-        .message.user .bubble {
-            background: var(--chat-user-bg);
-            color: #ffffff;
-            border-bottom-right-radius: 2px;
-        }
+        .agent-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: flex; gap: 0.75rem; align-items: center; }
+        .path-chip { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(168, 85, 247, 0.3); }
 
-        .message.agent .bubble {
-            background: #0f172a;
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            border-bottom-left-radius: 2px;
-        }
-
-        .agent-meta {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 0.35rem;
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-        }
-
-        .path-chip {
-            background: rgba(168, 85, 247, 0.15);
-            color: var(--accent-purple);
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            border: 1px solid rgba(168, 85, 247, 0.3);
-        }
-
-        .chat-input-area {
-            padding: 1rem 1.5rem;
-            background: #0f172a;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 0.75rem;
-            align-items: flex-end;
-        }
-
-        .chat-input {
-            flex: 1;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 0.85rem 1.25rem;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            resize: none;
-            min-height: 48px;
-            max-height: 220px;
-            overflow-y: auto;
-            line-height: 1.4;
-        }
-
+        .chat-input-area { padding: 1rem 1.5rem; background: #0f172a; border-top: 1px solid var(--border-color); display: flex; gap: 0.75rem; align-items: flex-end; }
+        .chat-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.85rem 1.25rem; border-radius: 12px; font-size: 0.95rem; resize: none; min-height: 48px; max-height: 220px; overflow-y: auto; line-height: 1.4; }
         .chat-input:focus { outline: none; border-color: var(--accent-blue); }
 
-        .send-btn {
-            background: var(--accent-blue);
-            color: #0f172a;
-            font-weight: 700;
-            padding: 0.85rem 1.5rem;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            height: 48px;
-        }
-
+        .send-btn { background: var(--accent-blue); color: #0f172a; font-weight: 700; padding: 0.85rem 1.5rem; border: none; border-radius: 10px; cursor: pointer; transition: opacity 0.2s; height: 48px; }
         .send-btn:hover { opacity: 0.9; }
 
-        /* GRID CARDS & PANELS */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s ease, border-color 0.2s ease;
-        }
-
+        /* GRID CARDS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); transition: transform 0.2s ease, border-color 0.2s ease; }
         .card:hover { transform: translateY(-2px); border-color: var(--accent-blue); }
         .card-title { font-size: 0.875rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        .card-value { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        .card-value { font-size: 1.4rem; font-weight: 700; color: var(--text-main); }
         .card-desc { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem; }
 
         .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
         label { font-size: 0.875rem; color: var(--text-muted); font-weight: 600; }
 
-        input[type="text"], input[type="password"], select {
-            background: #0f172a;
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            width: 100%;
-        }
-
+        input[type="text"], input[type="password"], select { background: #0f172a; border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; font-size: 1rem; width: 100%; }
         input:focus, select:focus { outline: none; border-color: var(--accent-blue); }
 
-        .btn {
-            background: var(--accent-blue);
-            color: #0f172a;
-            font-weight: 700;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            margin-top: 1rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
+        .btn { background: var(--accent-blue); color: #0f172a; font-weight: 700; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.5rem; }
         .btn-small { padding: 0.4rem 0.75rem; font-size: 0.8rem; margin-top: 0; border-radius: 6px; }
         .btn-green { background: var(--accent-green); color: #0f172a; }
         .btn:hover { opacity: 0.9; }
@@ -325,16 +125,8 @@
         .file-actions { display: flex; gap: 0.5rem; }
 
         /* MODAL */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .modal-content {
-            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px;
-            width: 90%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; width: 90%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
         .modal-header { padding: 1.25rem 1.5rem; background: #0f172a; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 1.5rem; overflow-y: auto; font-family: 'Fira Code', monospace; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; background: #090d16; color: #e2e8f0; }
 
@@ -349,7 +141,7 @@
 
         <nav class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat Agéntico</button>
-            <button class="tab-btn" onclick="switchTab('config')">⚙️ Failover & Gemini</button>
+            <button class="tab-btn" onclick="switchTab('config')">⚙️ Failover & Selección de Modelos</button>
             <button class="tab-btn" onclick="switchTab('vault')">📁 Bóveda & RAG</button>
         </nav>
 
@@ -364,19 +156,28 @@
             <div class="chat-container">
                 <div class="chat-header">
                     <div>
-                        <strong style="font-size: 1.1rem;">Asistente Agéntico Multiagente</strong>
-                        <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 0.5rem;">LangGraph + Memoria Persistente</span>
+                        <strong style="font-size: 1.05rem;">Asistente Agéntico Multiagente</strong>
+                        <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">LangGraph + Memoria Activa</span>
                     </div>
+
+                    <!-- SELECTOR DIRECTO DE MODELO EN EL CHAT -->
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <label for="chat-provider-select" style="font-size: 0.8rem; color: var(--text-muted);">Modelo Activo:</label>
+                        <select id="chat-provider-select" onchange="changeProviderDirectly(this.value)" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.85rem; border-radius: 6px;">
+                            <option value="auto">🤖 Auto (Failover 3 Capas)</option>
+                            <option value="tier1_pc">🖥️ PC Local LAN (qwen3.5:4b)</option>
+                            <option value="tier2_cloud">☁️ Cloud Gemini (Gemini API)</option>
+                            <option value="tier3_rpi">🍓 RPi Local Edge (qwen2.5:1.5b)</option>
+                        </select>
                         <button class="btn btn-small" onclick="resetChatThread()" style="background: #334155; color: #f8fafc; font-size: 0.75rem;">🗑️ Reiniciar Memoria</button>
-                        <div class="active-tier-tag" id="active-tier-badge">Detectando LLM Activo...</div>
+                        <div class="active-tier-tag" id="active-tier-badge">Detectando LLM...</div>
                     </div>
                 </div>
 
                 <div class="chat-messages" id="chat-messages">
                     <div class="message agent">
                         <div class="bubble">
-                            ¡Hola! Soy <strong>Antigravity</strong>, tu Asistente Agéntico Edge. Mantengo memoria conversacional activa en la Raspberry Pi 5. ¿En qué puedo ayudarte hoy?
+                            ¡Hola! Soy <strong>Antigravity</strong>, tu Asistente Agéntico Edge. Mantengo memoria conversacional activa en la Raspberry Pi 5. Puedes seleccionar directamente el modelo a utilizar o dejarlo en modo automático. ¿En qué puedo ayudarte hoy?
                         </div>
                         <div class="agent-meta">
                             <span>Sistema Inicializado</span>
@@ -394,40 +195,49 @@
 
         <!-- TAB 2: CONFIGURACIÓN & FAILOVER -->
         <section id="tab-config" class="tab-content">
-            <h2>Panel de Estado de Modelos y Failover</h2>
-            <p style="color: var(--text-muted); margin-top: 0.25rem;">Monitoreo en tiempo real de la disponibilidad de los 3 niveles de inferencia.</p>
+            <h2>Panel de Diagnóstico, Modelos y Configuración</h2>
+            <p style="color: var(--text-muted); margin-top: 0.25rem;">Monitoreo en tiempo real y selección de proveedores de inferencia.</p>
 
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">Prioridad 1: PC Local LAN</div>
+                    <div class="card-title">Prioridad 1: PC Local LAN (Ollama)</div>
                     <div class="card-value" id="pc-model-name">qwen3.5:4b</div>
-                    <div class="card-desc" id="pc-status">Verificando http://192.168.1.50:11434...</div>
+                    <div class="card-desc" id="pc-status">Cargando estado...</div>
+                    
+                    <!-- CONFIGURACIÓN DE IP DEL PC LOCAL -->
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="pc-url-input">Dirección IP/URL de Ollama en PC Local:</label>
+                        <input type="text" id="pc-url-input" placeholder="http://192.168.1.XX:11434">
+                        <button class="btn btn-small" onclick="savePcUrl()" style="margin-top: 0.5rem;">💾 Guardar IP y Probar Conexión</button>
+                    </div>
                 </div>
 
                 <div class="card">
                     <div class="card-title">Prioridad 2: Cloud Gemini API</div>
                     <div class="card-value" id="gemini-active-model">gemini-2.0-flash</div>
-                    <div class="card-desc" id="gemini-status">Modelos asociados a tu cuenta</div>
+                    <div class="card-desc" id="gemini-status">Cargando estado...</div>
+                    <div style="font-size: 0.8rem; color: var(--accent-green); margin-top: 0.5rem;" id="gemini-persisted-badge">✅ Credenciales persistidas en /dbs/credentials.json</div>
                 </div>
 
                 <div class="card">
                     <div class="card-title">Prioridad 3: Edge Fallback RPi</div>
                     <div class="card-value" id="rpi-model-name">qwen2.5:1.5b</div>
-                    <div class="card-desc" id="rpi-status">Ollama Local en RPi 5 (Offline)</div>
+                    <div class="card-desc" id="rpi-status">Cargando estado...</div>
                 </div>
             </div>
 
+            <!-- GESTIÓN DE GEMINI API KEY -->
             <div class="card" style="margin-top: 2rem;">
                 <h3>🔑 Gestión de Gemini API Key y Selección de Modelo</h3>
                 <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
-                    Al ingresar tu clave, podrás seleccionar cualquiera de los modelos asociados a tu cuenta de Google AI Studio desde el menú desplegable.
+                    Tu clave se almacena permanentemente en <code style="color: var(--accent-blue);">/app/dbs/credentials.json</code> y se conserva incluso tras reiniciar los contenedores.
                 </p>
 
                 <div class="form-group">
-                    <label for="gemini-key-input">Ingresar Gemini API Key:</label>
+                    <label for="gemini-key-input">Ingresar o Actualizar Gemini API Key:</label>
                     <input type="password" id="gemini-key-input" placeholder="AIzaSy... (Ingresa tu clave de Google AI Studio)">
                 </div>
-                <button class="btn" onclick="saveGeminiKey()">Guardar API Key y Cargar Modelos</button>
+                <button class="btn" onclick="saveGeminiKey()">💾 Guardar API Key en Disco y Cargar Modelos</button>
 
                 <div class="form-group" style="margin-top: 1.5rem;">
                     <label for="gemini-model-select">Seleccionar Modelo Activo de Gemini:</label>
@@ -447,7 +257,6 @@
             <h2>Gestión de Recursos Locales (/AssAntigravity/data)</h2>
             <p style="color: var(--text-muted); margin-top: 0.25rem;">Carga PDFs al RAG e inspecciona o descarga tus notas de Obsidian directamente a tu PC.</p>
 
-            <!-- SECCIÓN 1: CARGAR PDF AL RAG -->
             <div class="card" style="margin-top: 1.5rem;">
                 <h3>📄 Cargar PDF al RAG (Ingesta Semántica Automática)</h3>
                 <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
@@ -460,7 +269,6 @@
                 <div class="msg-box" id="rag-msg-box"></div>
             </div>
 
-            <!-- SECCIÓN 2: BÓVEDA DE OBSIDIAN -->
             <div class="grid">
                 <div class="card" style="grid-column: span 2;">
                     <div class="card-title">Bóveda de Obsidian (/data/obsidian) - Ver y Descargar al PC</div>
@@ -479,7 +287,7 @@
         </section>
     </main>
 
-    <!-- MODAL DE VISUALIZACIÓN DE NOTAS -->
+    <!-- MODAL -->
     <div class="modal-overlay" id="note-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -495,7 +303,6 @@
     </footer>
 
     <script>
-        // HILO PERSISTENTE EN LOCALSTORAGE
         let currentThreadId = localStorage.getItem('asistente_thread_id') || 'thread_main_user';
         localStorage.setItem('asistente_thread_id', currentThreadId);
 
@@ -548,6 +355,42 @@
                 }
             } catch (err) {
                 console.error('Error al reiniciar hilo:', err);
+            }
+        }
+
+        async function changeProviderDirectly(providerMode) {
+            try {
+                const res = await fetch('/api/system/select-provider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider: providerMode })
+                });
+                if (res.ok) {
+                    fetchStatus();
+                }
+            } catch (err) {
+                console.warn('Error cambiando proveedor:', err);
+            }
+        }
+
+        async function savePcUrl() {
+            const input = document.getElementById('pc-url-input');
+            const urlVal = input.value.trim();
+            if (!urlVal) return;
+
+            try {
+                const res = await fetch('/api/system/update-pc-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pc_url: urlVal })
+                });
+
+                if (res.ok) {
+                    showMsg('✅ URL de Ollama PC actualizada exitosamente.');
+                    fetchStatus();
+                }
+            } catch (err) {
+                showMsg('Error al actualizar URL del PC.', false);
             }
         }
 
@@ -632,20 +475,33 @@
                 if (res.ok) {
                     const data = await res.json();
                     
+                    // Actualizar selector del chat y modo
+                    if (data.selected_provider_mode) {
+                        document.getElementById('chat-provider-select').value = data.selected_provider_mode;
+                    }
+
+                    // PC Local
                     document.getElementById('pc-model-name').textContent = data.tier1_pc.model;
-                    document.getElementById('pc-status').textContent = data.tier1_pc.available 
-                        ? `🟢 Disponible (${data.tier1_pc.latency_ms} ms)` 
-                        : `🔴 Inalcanzable (Timeout 1.5s)`;
+                    document.getElementById('pc-url-input').value = data.tier1_pc.url;
+                    document.getElementById('pc-status').innerHTML = data.tier1_pc.available 
+                        ? `<span style="color: var(--accent-green);">🟢 Disponible</span> (${data.tier1_pc.detail})` 
+                        : `<span style="color: #ef4444;">🔴 Inalcanzable</span> (${data.tier1_pc.detail})`;
 
+                    // Gemini Cloud
                     document.getElementById('gemini-active-model').textContent = data.tier2_cloud.model;
-                    document.getElementById('gemini-status').textContent = data.tier2_cloud.available 
-                        ? `🟢 API Key Configurada (${data.tier2_cloud.model})` 
-                        : `🟡 Clave no provista (Usará fallback RPi)`;
+                    document.getElementById('gemini-status').innerHTML = data.tier2_cloud.available 
+                        ? `<span style="color: var(--accent-green);">🟢 Conectado</span> (${data.tier2_cloud.detail})` 
+                        : `<span style="color: var(--accent-amber);">🟡 Sin API Key activa</span> (${data.tier2_cloud.detail})`;
 
+                    document.getElementById('gemini-persisted-badge').textContent = data.tier2_cloud.available
+                        ? "✅ API Key guardada de forma persistente en /dbs/credentials.json"
+                        : "⚠️ No hay API Key guardada en /dbs/credentials.json";
+
+                    // RPi Edge
                     document.getElementById('rpi-model-name').textContent = data.tier3_rpi.model;
-                    document.getElementById('rpi-status').textContent = data.tier3_rpi.available 
-                        ? `🟢 Ollama Local Activo` 
-                        : `🟡 Standby / Inalcanzable`;
+                    document.getElementById('rpi-status').innerHTML = data.tier3_rpi.available 
+                        ? `<span style="color: var(--accent-green);">🟢 Ollama Local Activo</span>` 
+                        : `<span style="color: var(--text-muted);">🟡 Standby / Offline</span> (${data.tier3_rpi.detail})`;
 
                     document.getElementById('active-tier-badge').textContent = `Activo: ${data.active_provider.tier} (${data.active_provider.model})`;
                 }
@@ -705,7 +561,7 @@
 
                 const data = await res.json();
                 if (res.ok) {
-                    showMsg('✅ API Key almacenada de forma segura.');
+                    showMsg('✅ API Key almacenada permanentemente en /dbs/credentials.json');
                     document.getElementById('gemini-key-input').value = '';
                     document.getElementById('gemini-active-model').textContent = data.active_model;
                     populateModelsDropdown(data.available_models, data.active_model);
@@ -778,7 +634,6 @@
 
         async function fetchVaultResources() {
             try {
-                // Obsidian Notes
                 const obsRes = await fetch('/api/tools/obsidian/notes');
                 if (obsRes.ok) {
                     const data = await obsRes.json();
@@ -798,7 +653,6 @@
                     }
                 }
 
-                // Finanzas
                 const finRes = await fetch('/api/tools/finance/files');
                 if (finRes.ok) {
                     const data = await finRes.json();

@@ -11,6 +11,7 @@ CREDENTIALS_FILE = "/app/dbs/credentials.json"
 def get_credentials_path() -> str:
     dbs_dir = "/app/dbs"
     if os.path.exists(dbs_dir):
+        os.makedirs(dbs_dir, exist_ok=True)
         return CREDENTIALS_FILE
     local_dbs = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "dbs"))
     os.makedirs(local_dbs, exist_ok=True)
@@ -37,12 +38,17 @@ class GeminiService:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.api_key = data.get("gemini_api_key", os.getenv("GEMINI_API_KEY", ""))
+                    saved_key = data.get("gemini_api_key", "").strip()
+                    if saved_key:
+                        self.api_key = saved_key
+                    else:
+                        self.api_key = os.getenv("GEMINI_API_KEY", "")
+
                     raw_model = data.get("gemini_model", os.getenv("GEMINI_MODEL", "gemini-2.0-flash"))
-                    self.active_model = raw_model.replace("models/", "")
-                    logger.info(f"Credenciales de Gemini cargadas. Modelo activo: {self.active_model}")
+                    self.active_model = raw_model.replace("models/", "").strip()
+                    logger.info(f"Credenciales de Gemini cargadas desde '{path}'. Modelo activo: {self.active_model}")
             except Exception as e:
-                logger.error(f"Error al leer credenciales: {e}")
+                logger.error(f"Error al leer credenciales desde '{path}': {e}")
         else:
             self.api_key = os.getenv("GEMINI_API_KEY", "")
             raw_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
@@ -57,14 +63,25 @@ class GeminiService:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-            os.chmod(path, 0o600)
-            logger.info("Credenciales de Gemini guardadas con éxito.")
+            try:
+                os.chmod(path, 0o666)
+            except Exception:
+                pass
+            logger.info(f"Credenciales de Gemini guardadas exitosamente en '{path}'.")
         except Exception as e:
-            logger.error(f"Error al guardar credenciales: {e}")
+            logger.error(f"Error al guardar credenciales en '{path}': {e}")
+
+    def get_active_api_key(self) -> str:
+        self._load_saved_config()
+        return self.api_key
+
+    def get_active_model_id(self) -> str:
+        self._load_saved_config()
+        return self.active_model
 
     async def fetch_available_models(self, key_to_test: Optional[str] = None) -> List[Dict[str, str]]:
-        api_key = key_to_test or self.api_key
-        if not api_key:
+        api_key = key_to_test or self.get_active_api_key()
+        if not api_key or api_key == "tu_api_key_aqui":
             return DEFAULT_GEMINI_MODELS
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
@@ -92,7 +109,7 @@ class GeminiService:
 
     async def update_key_and_get_models(self, new_key: str) -> List[Dict[str, str]]:
         models = await self.fetch_available_models(new_key)
-        self.api_key = new_key
+        self.api_key = new_key.strip()
         if models and self.active_model not in [m["id"] for m in models]:
             self.active_model = models[0]["id"]
         self._save_config()
@@ -107,10 +124,13 @@ class GeminiService:
 
     async def generate_content(self, prompt: str, system_prompt: str = "") -> Optional[str]:
         """Genera respuesta usando la API REST oficial de Google Gemini v1beta"""
-        if not self.api_key:
+        api_key = self.get_active_api_key()
+        model_name = self.get_active_model_id()
+
+        if not api_key or api_key == "tu_api_key_aqui":
             return None
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.active_model}:generateContent?key={self.api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
         
         contents = []
         if system_prompt:
