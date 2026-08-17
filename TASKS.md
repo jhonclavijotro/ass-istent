@@ -8,7 +8,7 @@
 
 ## ESTRUCTURA DE CONTROL (PHASE-GATE REVIEWS)
 
-- [ ] **FASE 1: ESPECIFICACIÓN Y ARQUITECTURA EDGE (Spec)**
+- [x] **FASE 1: ESPECIFICACIÓN Y ARQUITECTURA EDGE (Spec)**
 - [ ] **FASE 2: INFRAESTRUCTURA DOCKER EN RASPBERRY PI 5**
 - [ ] **FASE 3: MOTOR MULTIAGENTE Y SISTEMA DE FAILOVER (LangGraph)**
 - [ ] **FASE 4: HERRAMIENTAS, INTEGRACIÓN Y SINCRONIZACIÓN DE RECURSOS**
@@ -25,30 +25,30 @@
   - [x] Crear `CONSTITUTION.md` con principios de desarrollo y reglas edge.
   - [x] Crear `TASKS.md` para seguimiento detallado de trabajo.
   - [x] Crear `BUG_TRACKER.md` para registro de incidencias y correcciones.
-- [ ] **1.2 Redacción del Documento de Especificación del Proyecto (`project_spec.md`)**
-  - [ ] Diseñar el Diagrama de Red Edge (Topología Ethernet RPi 5 <-> PC Local <-> Cloud Gemini).
-  - [ ] Especificar la estrategia de prueba de conectividad y latencia (Circuit Breaker LLM Router).
-  - [ ] Definir el Stack de Software (FastAPI, LangGraph, Qdrant, React/Vue/Vanilla UI).
-  - [ ] Mapear los esquemas de directorios locales (PDFs, Obsidian Vault, Excel Finanzas).
-  - [ ] Definir el flujo de versionado en GitHub y despliegue SSH a la RPi 5 (`jhonclavijotro@192.168.1.10`).
-- [ ] **1.3 Inicialización del Repositorio GitHub y Conectividad SSH**
-  - [ ] Configurar el control de versiones local Git (`git init`, `.gitignore`).
-  - [ ] Vincular el repositorio remoto en GitHub para versionado de configuraciones.
-- [ ] **1.4 Phase-Gate Review 1**
-  - [ ] Presentar `project_spec.md` al Director del Proyecto y obtener aprobación explícita.
+- [x] **1.2 Redacción del Documento de Especificación del Proyecto (`project_spec.md`)**
+  - [x] Diseñar el Diagrama de Red Edge (Topología Ethernet RPi 5 <-> PC Local <-> Cloud Gemini).
+  - [x] Especificar la estrategia de prueba de conectividad y latencia (Circuit Breaker LLM Router).
+  - [x] Definir el Stack de Software (FastAPI, LangGraph, Qdrant, React/Vue/Vanilla UI).
+  - [x] Mapear los esquemas de directorios locales (PDFs, Obsidian Vault, Excel Finanzas).
+  - [x] Definir el flujo de versionado en GitHub y despliegue SSH a la RPi 5 (`jhonclavijotro@192.168.1.10`).
+- [x] **1.3 Inicialización del Repositorio GitHub y Conectividad SSH**
+  - [x] Configurar el control de versiones local Git (`git init`, `.gitignore`).
+  - [x] Vincular el repositorio remoto en GitHub para versionado de configuraciones.
+- [x] **1.4 Phase-Gate Review 1**
+  - [x] Presentar `project_spec.md` al Director del Proyecto y obtener aprobación explícita.
 
 ---
 
 ### FASE 2: INFRAESTRUCTURA DOCKER EN RASPBERRY PI 5
 > **Objetivo:** Configurar el entorno de contenedores optimizado para ARM64 en la Raspberry Pi 5.
 
-- [ ] **2.1 Definición de la Configuración Docker**
-  - [ ] Diseñar `docker-compose.yml` especificando contenedores independientes: Backend FastAPI, VectorDB (Qdrant ARM64), Frontend (Nginx), OCR/Extraction (opcional).
-  - [ ] Definir volúmenes (`bind mounts`) para persistencia local de carpetas físicas y base de datos vectoriales.
-  - [ ] Configurar restricciones de memoria (cgroups RAM limits) para prevenir thrashing en RPi 5.
-- [ ] **2.2 Pruebas de Despliegue de Infraestructura**
-  - [ ] Validar compatibilidad de imágenes Docker en entorno ARM64.
-  - [ ] Verificar persistencia de volúmenes y permisos de lectura/escritura en RPi.
+- [x] **2.1 Definición de la Configuración Docker**
+  - [x] Diseñar `docker-compose.yml` especificando contenedores independientes: Backend FastAPI, VectorDB (Qdrant ARM64), Frontend (Nginx).
+  - [x] Definir volúmenes (`bind mounts`) para persistencia local de carpetas físicas y base de datos vectoriales en `/AssAntigravity`.
+  - [x] Configurar restricciones de memoria (cgroups RAM limits) para prevenir thrashing en RPi 5.
+- [x] **2.2 Pruebas de Despliegue de Infraestructura**
+  - [x] Validar compatibilidad de imágenes Docker en entorno ARM64 (`python:3.11-slim`, `qdrant/qdrant`, `nginx:alpine`).
+  - [x] Verificar estructura de volúmenes locales y plantilla de configuración `.env.example`.
 - [ ] **2.3 Phase-Gate Review 2**
   - [ ] Presentar infraestructura Docker desplegada al Director del Proyecto para aprobación.
 

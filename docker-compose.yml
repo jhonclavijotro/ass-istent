@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # =========================================================================
+  # BACKEND: FastAPI + LangGraph Engine (ARM64)
+  # =========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: asistente-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Mounts de carpetas físicas en la Raspberry Pi 5 (/AssAntigravity)
+      - /AssAntigravity/data/pdfs:/app/data/pdfs
+      - /AssAntigravity/data/obsidian:/app/data/obsidian
+      - /AssAntigravity/data/finanzas:/app/data/finanzas
+      - /AssAntigravity/dbs:/app/dbs
+    depends_on:
+      - qdrant
+    deploy:
+      resources:
+        limits:
+          cpus: '2.00'
+          memory: 1536M
+        reservations:
+          cpus: '0.50'
+          memory: 512M
+    networks:
+      - asistente-net
+
+  # =========================================================================
+  # VECTOR DB: Qdrant Engine (Rust Native ARM64)
+  # =========================================================================
+  qdrant:
+    image: qdrant/qdrant:v1.9.2-unprivileged
+    container_name: asistente-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - /AssAntigravity/dbs/qdrant_storage:/qdrant/storage
+    deploy:
+      resources:
+        limits:
+          cpus: '1.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - asistente-net
+
+  # =========================================================================
+  # FRONTEND: Web UI Server (Nginx ARM64)
+  # =========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: asistente-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 128M
+        reservations:
+          cpus: '0.10'
+          memory: 32M
+    networks:
+      - asistente-net
+
+networks:
+  asistente-net:
+    driver: bridge
