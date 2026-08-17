@@ -1,4 +1,5 @@
 import os
+import glob
 import logging
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
@@ -17,7 +18,42 @@ from app.agents.nodes import (
 
 logger = logging.getLogger("agent_graph")
 
+# Checkpointer persistente en memoria global de la instancia FastAPI
 memory_checkpointer = MemorySaver()
+
+def read_persistent_obsidian_notes() -> str:
+    """Lee todas las notas de la Bóveda de Obsidian para inyectarlas como Memoria a Largo Plazo"""
+    obs_dirs = [
+        "/app/data/obsidian",
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "obsidian"))
+    ]
+    
+    target_dir = None
+    for d in obs_dirs:
+        if os.path.exists(d):
+            target_dir = d
+            break
+            
+    if not target_dir:
+        return ""
+
+    md_files = glob.glob(os.path.join(target_dir, "**", "*.md"), recursive=True)
+    if not md_files:
+        return ""
+
+    notes_content = []
+    for filepath in md_files:
+        filename = os.path.basename(filepath)
+        if filename.startswith("."): continue
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                c = f.read().strip()
+                if c:
+                    notes_content.append(f"--- NOTA BÓVEDA ({filename}) ---\n{c}")
+        except Exception as e:
+            logger.warning(f"Error al leer nota {filepath}: {e}")
+
+    return "\n\n".join(notes_content)
 
 def router_conditional(state: AgentState) -> str:
     """Función de enrutamiento condicional basada en la decisión del Supervisor"""

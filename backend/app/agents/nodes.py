@@ -49,7 +49,7 @@ async def obsidian_node(state: AgentState) -> AgentState:
         "payload": {
             "path": "Sintesis_Interacciones/Memoria_Usuario.md",
             "title": "Registro de Interacción y Memoria",
-            "content": f"# Memoria Agéntica\n\n- **Consulta:** {query}\n- **Fecha:** Registrado automáticamente por Antigravity Edge."
+            "content": f"# Memoria Agéntica\n\n- **Perfil:** {query}\n- **Registrado:** Por Antigravity Edge."
         },
         "risk_level": "MEDIUM"
     }
@@ -171,24 +171,32 @@ async def email_action_node(state: AgentState) -> AgentState:
     return state
 
 async def writer_node(state: AgentState) -> AgentState:
-    """Agente Redactor Final: Sintetiza los datos recopilados y responde mediante el LLM"""
+    """Agente Redactor Final: Inyecta notas de la Bóveda de Obsidian y sintetiza la respuesta"""
+    from app.agents.graph import read_persistent_obsidian_notes
+    
     history = state.get("agent_history", [])
-    history.append("Redactor: Sintetizando respuesta final")
+    history.append("Redactor: Consultado Bóveda de Memoria de Obsidian e Inyectando Contexto")
+    
+    # Ingesta de Memoria a Largo Plazo desde disco de la RPi 5
+    vault_memory = read_persistent_obsidian_notes()
     
     context_parts = []
+    if vault_memory:
+        context_parts.append(f"🧠 MEMORIA PERSISTENTE DE LA BÓVEDA DE OBSIDIAN:\n{vault_memory}")
     if state.get("research_context"): context_parts.append(state["research_context"])
     if state.get("obsidian_context"): context_parts.append(state["obsidian_context"])
     if state.get("finance_context"): context_parts.append(state["finance_context"])
     if state.get("email_context"): context_parts.append(state["email_context"])
     
-    context_str = "\n\n".join(context_parts) if context_parts else "No se requirió información externa adicional."
+    context_str = "\n\n".join(context_parts) if context_parts else "Sin notas adicionales en la Bóveda de Memoria."
     
     user_query = state['user_query']
     system_prompt = (
         "Eres Antigravity, un Asistente Agéntico Edge avanzado, atento y profesional.\n"
-        "Tu objetivo es responder de forma directa, cálida y útil a las inquietudes del usuario.\n"
-        "Si el usuario se presenta o proporciona sus datos, dale una calurosa bienvenida reconociendo su perfil.\n"
-        f"Contexto disponible de herramientas:\n{context_str}"
+        "Tienes acceso a la Memoria Persistente a Largo Plazo almacenada en la Bóveda de Obsidian del usuario en disco.\n"
+        "Si el usuario te pregunta por su nombre, perfil o datos compartidos anteriormente, REVISA Y CONSULTA LA MEMORIA DE LA BÓVEDA DE OBSIDIAN para responderle con precisión.\n"
+        "Jamás digas que no recuerdas al usuario o que no tienes memoria persistente si la información está en la Bóveda.\n"
+        f"Contexto disponible:\n{context_str}"
     )
     
     llm_res = await llm_router.generate_response(prompt=user_query, system_prompt=system_prompt)
