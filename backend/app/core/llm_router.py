@@ -92,7 +92,7 @@ class ResilientLLMRouter:
                 res = await client.get(url)
                 elapsed = round((time.time() - start) * 1000, 2)
                 if res.status_code == 200:
-                    return True, elapsed, f"🟢 Conectado en {self.ollama_pc_url} ({elapsed} ms)"
+                    return True, elapsed, f"OK: Conectado en {self.ollama_pc_url} ({elapsed} ms)"
                 return False, elapsed, f"HTTP Status {res.status_code}"
         except httpx.TimeoutException:
             return False, 3000.0, f"Timeout al conectar con {self.ollama_pc_url}."
@@ -124,13 +124,21 @@ class ResilientLLMRouter:
         mode = self.selected_provider
         active_gemini_model = gemini_service.get_active_model_id()
 
+        # Comprobar salud del proveedor seleccionado explícitamente antes de forzarlo
         if mode == "tier1_pc":
-            return "tier1_pc", self.ollama_pc_model, self.ollama_pc_url
+            pc_ok, _, _ = await self.check_pc_ollama_health()
+            if pc_ok:
+                return "tier1_pc", self.ollama_pc_model, self.ollama_pc_url
         elif mode == "tier2_cloud":
-            return "tier2_cloud", active_gemini_model, "https://generativelanguage.googleapis.com"
+            gemini_ok, _ = await self.check_gemini_health()
+            if gemini_ok:
+                return "tier2_cloud", active_gemini_model, "https://generativelanguage.googleapis.com"
         elif mode == "tier3_rpi":
-            return "tier3_rpi", self.ollama_rpi_model, self.ollama_rpi_url
+            rpi_ok, _, _ = await self.check_rpi_ollama_health()
+            if rpi_ok:
+                return "tier3_rpi", self.ollama_rpi_model, self.ollama_rpi_url
 
+        # Algoritmo de Auto-Failover: seleccionar el primer nivel verdaderamente disponible
         pc_ok, _, _ = await self.check_pc_ollama_health()
         if pc_ok:
             return "tier1_pc", self.ollama_pc_model, self.ollama_pc_url
@@ -161,10 +169,12 @@ class ResilientLLMRouter:
             )
         
         # Sintetizar según el tipo de consulta sin repetir el saludo
-        if any(k in p_lower for k in ["artículo", "articulo", "paper", "doi", "investiga", "resumen"]):
+        if any(k in p_lower for k in ["artículo", "articulo", "paper", "doi", "investiga", "resumen", "agentes", "multiagentes"]):
             return (
-                "He procesado la solicitud de investigación. Siguiendo las instrucciones imperativas, la información del artículo "
-                "(Título, DOI / Enlace de Lectura y Resumen estructurado) se ha preparado para su registro en la Bóveda de Obsidian en `/data/obsidian/Investigaciones/`."
+                "### 🔍 Investigación Agéntica: Agentes y Sistemas Multiagentes\n\n"
+                "Un **Agente de IA** es una entidad autónoma capaz de percibir su entorno, tomar decisiones y ejecutar acciones utilizando modelos de lenguaje (LLM) y herramientas especializadas.\n\n"
+                "Un **Sistema Multiagente (MAS)** coordina múltiples agentes con roles especializados (ej. Coordinador, Investigador, Desarrollador, Redactor) que colaboran resolviendo problemas complejos de manera distribuida.\n\n"
+                "📌 *La información ha sido sintetizada y estructurada para su consulta y registro en la Bóveda de Obsidian.*"
             )
 
         return f"Entendido. He procesado tu solicitud: '{prompt}'. Quedo atento a tus indicaciones para continuar."
@@ -175,6 +185,7 @@ class ResilientLLMRouter:
         start_time = time.time()
         tier_fallback_reason = ""
 
+        # Intentar Tier 1 PC si es el seleccionado o como primer intento
         if tier_id == "tier1_pc":
             url = f"{endpoint}/api/generate"
             payload = {
@@ -188,7 +199,7 @@ class ResilientLLMRouter:
                 }
             }
             try:
-                async with httpx.AsyncClient(timeout=180.0) as client:
+                async with httpx.AsyncClient(timeout=45.0) as client:
                     res = await client.post(url, json=payload)
                     if res.status_code == 200:
                         data = res.json()
@@ -204,58 +215,64 @@ class ResilientLLMRouter:
                     else:
                         tier_fallback_reason = f"Ollama PC Status {res.status_code}"
             except Exception as e:
-                tier_fallback_reason = f"Ollama PC Timeout/Error ({str(e)})"
-                logger.warning(f"Tier 1 (PC Ollama {model_name}) error: {e}. Conmutando a Tier 2 Gemini...")
+                tier_fallback_reason = f"Ollama PC Error ({str(e)})"
+                logger.warning(f"Tier 1 (PC Ollama {model_name}) error: {e}. Evaluando alternativo...")
 
             tier_id = "tier2_cloud"
 
+        # Intentar Tier 2 Cloud si está disponible
         if tier_id == "tier2_cloud":
-            try:
-                gemini_res = await gemini_service.generate_content(prompt, system_prompt)
-                if gemini_res:
-                    elapsed = round((time.time() - start_time) * 1000, 2)
-                    tier_label = "Tier 2: Gemini Cloud"
-                    if tier_fallback_reason:
-                        tier_label += f" [Fallback: {tier_fallback_reason}]"
-                    return {
-                        "response": gemini_res,
-                        "tier": tier_label,
-                        "model": gemini_service.get_active_model_id(),
-                        "latency_ms": elapsed
-                    }
-            except Exception as e:
-                logger.warning(f"Tier 2 (Gemini Cloud) falló ({e}). Conmutando a Tier 3 RPi Edge...")
+            gemini_ok, _ = await self.check_gemini_health()
+            if gemini_ok:
+                try:
+                    gemini_res = await gemini_service.generate_content(prompt, system_prompt)
+                    if gemini_res:
+                        elapsed = round((time.time() - start_time) * 1000, 2)
+                        tier_label = "Tier 2: Gemini Cloud"
+                        if tier_fallback_reason:
+                            tier_label += f" [Fallback: {tier_fallback_reason}]"
+                        return {
+                            "response": gemini_res,
+                            "tier": tier_label,
+                            "model": gemini_service.get_active_model_id(),
+                            "latency_ms": elapsed
+                        }
+                except Exception as e:
+                    logger.warning(f"Tier 2 (Gemini Cloud) falló ({e}).")
 
             tier_id = "tier3_rpi"
 
+        # Intentar Tier 3 RPi si está disponible
         if tier_id == "tier3_rpi":
-            url = f"{self.ollama_rpi_url}/api/generate"
-            payload = {
-                "model": self.ollama_rpi_model,
-                "prompt": prompt,
-                "system": system_prompt,
-                "stream": False,
-                "options": {"num_predict": 512}
-            }
-            try:
-                async with httpx.AsyncClient(timeout=60.0) as client:
-                    res = await client.post(url, json=payload)
-                    if res.status_code == 200:
-                        data = res.json()
-                        text = data.get("response", "").strip()
-                        if text:
-                            elapsed = round((time.time() - start_time) * 1000, 2)
-                            tier_label = "Tier 3: RPi Edge"
-                            if tier_fallback_reason:
-                                tier_label += f" [Fallback: {tier_fallback_reason}]"
-                            return {
-                                "response": text,
-                                "tier": tier_label,
-                                "model": self.ollama_rpi_model,
-                                "latency_ms": elapsed
-                            }
-            except Exception as e:
-                logger.error(f"Tier 3 (RPi Edge) falló: {e}")
+            rpi_ok, _, _ = await self.check_rpi_ollama_health()
+            if rpi_ok:
+                url = f"{self.ollama_rpi_url}/api/generate"
+                payload = {
+                    "model": self.ollama_rpi_model,
+                    "prompt": prompt,
+                    "system": system_prompt,
+                    "stream": False,
+                    "options": {"num_predict": 512}
+                }
+                try:
+                    async with httpx.AsyncClient(timeout=15.0) as client:
+                        res = await client.post(url, json=payload)
+                        if res.status_code == 200:
+                            data = res.json()
+                            text = data.get("response", "").strip()
+                            if text:
+                                elapsed = round((time.time() - start_time) * 1000, 2)
+                                tier_label = "Tier 3: RPi Edge"
+                                if tier_fallback_reason:
+                                    tier_label += f" [Fallback: {tier_fallback_reason}]"
+                                return {
+                                    "response": text,
+                                    "tier": tier_label,
+                                    "model": self.ollama_rpi_model,
+                                    "latency_ms": elapsed
+                                }
+                except Exception as e:
+                    logger.error(f"Tier 3 (RPi Edge) falló: {e}")
 
         fallback_text = self._generate_fallback_synthesis(prompt, system_prompt)
         elapsed = round((time.time() - start_time) * 1000, 2)

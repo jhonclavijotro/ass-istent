@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asistente Agéntico Edge - Sistema Distribuido (/AssAntigravity)</title>
     
-    <!-- GOOGLE FONTS -->
+    <!-- GOOGLE FONTS & MARKED JS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
         :root {
@@ -1072,11 +1073,40 @@
                         appendMessage('agent', data.response, data.active_tier || 'Edge Hybrid', data.active_model || 'LLM Router');
                     }
                 } else {
-                    appendMessage('agent', '❌ Error al obtener respuesta del servidor agéntico.');
+                    let errMsg = 'Error al obtener respuesta del servidor agéntico.';
+                    try {
+                        const errData = await res.json();
+                        if (errData && errData.detail) errMsg = errData.detail;
+                    } catch(e) {}
+                    appendMessage('agent', `❌ ${errMsg}`);
                 }
             } catch (err) {
                 appendMessage('agent', `❌ Error de red: ${err.message}`);
             }
+        }
+
+        function renderFormattedText(text) {
+            if (!text) return '';
+            if (window.marked && typeof window.marked.parse === 'function') {
+                try {
+                    return window.marked.parse(text);
+                } catch (e) {}
+            }
+            // Formateador alternativo local sin marcas raw
+            let html = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+            
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            html = html.replace(/`([^`]+)`/g, '<code style="background:#1e293b;padding:2px 6px;border-radius:4px;">$1</code>');
+            html = html.replace(/^### (.*$)/gim, '<h3 style="margin:8px 0 4px 0;">$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2 style="margin:10px 0 6px 0;">$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1 style="margin:12px 0 6px 0;">$1</h1>');
+            html = html.replace(/^\- (.*$)/gim, '<li style="margin-left:16px;">$1</li>');
+            html = html.replace(/\n/g, '<br>');
+            return html;
         }
 
         function showHITLModal(action) {
@@ -1129,8 +1159,10 @@
                 `;
             }
 
+            const formattedContent = sender === 'agent' ? renderFormattedText(text) : text.replace(/\n/g, '<br>');
+
             msgDiv.innerHTML = `
-                <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
+                <div class="bubble">${formattedContent}</div>
                 ${metaHTML}
             `;
 
