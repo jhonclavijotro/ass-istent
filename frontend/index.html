@@ -305,6 +305,70 @@
             </div>
 
             <div class="grid" style="margin-top: 1.5rem;">
+                <!-- GRÁFICOS DE BARRAS POR CUENTA BANCARIA -->
+                <div class="card" style="grid-column: span 3;">
+                    <div class="card-title">📊 Gráficos de Ingresos y Egresos por Cuenta Bancaria</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                        <!-- BDV CHART -->
+                        <div style="background: #0f172a; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                <strong style="color: var(--accent-blue); font-size: 1rem;">🏦 Davivienda (BDV)</strong>
+                                <span id="chart-bdv-net" style="font-size: 0.85rem; font-weight: 700; color: var(--accent-blue);">$0 COP</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--accent-green); font-weight: 600; margin-bottom: 0.25rem;">
+                                        <span>🟢 Ingresos BDV:</span>
+                                        <span id="chart-bdv-ingreso-val">$0 COP</span>
+                                    </div>
+                                    <div style="width: 100%; height: 10px; background: #1e293b; border-radius: 5px; overflow: hidden;">
+                                        <div id="chart-bdv-ingreso-bar" style="width: 0%; height: 100%; background: var(--accent-green); transition: width 0.5s ease;"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #ef4444; font-weight: 600; margin-bottom: 0.25rem;">
+                                        <span>🔴 Egresos BDV:</span>
+                                        <span id="chart-bdv-egreso-val">$0 COP</span>
+                                    </div>
+                                    <div style="width: 100%; height: 10px; background: #1e293b; border-radius: 5px; overflow: hidden;">
+                                        <div id="chart-bdv-egreso-bar" style="width: 0%; height: 100%; background: #ef4444; transition: width 0.5s ease;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BLB CHART -->
+                        <div style="background: #0f172a; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                <strong style="color: var(--accent-purple); font-size: 1rem;">🏦 Bancolombia (BLB)</strong>
+                                <span id="chart-blb-net" style="font-size: 0.85rem; font-weight: 700; color: var(--accent-purple);">$0 COP</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--accent-green); font-weight: 600; margin-bottom: 0.25rem;">
+                                        <span>🟢 Ingresos BLB:</span>
+                                        <span id="chart-blb-ingreso-val">$0 COP</span>
+                                    </div>
+                                    <div style="width: 100%; height: 10px; background: #1e293b; border-radius: 5px; overflow: hidden;">
+                                        <div id="chart-blb-ingreso-bar" style="width: 0%; height: 100%; background: var(--accent-green); transition: width 0.5s ease;"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #ef4444; font-weight: 600; margin-bottom: 0.25rem;">
+                                        <span>🔴 Egresos BLB:</span>
+                                        <span id="chart-blb-egreso-val">$0 COP</span>
+                                    </div>
+                                    <div style="width: 100%; height: 10px; background: #1e293b; border-radius: 5px; overflow: hidden;">
+                                        <div id="chart-blb-egreso-bar" style="width: 0%; height: 100%; background: #ef4444; transition: width 0.5s ease;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid" style="margin-top: 1.5rem;">
                 <!-- TOP 3 MOVIMIENTOS MÁS COMUNES -->
                 <div class="card">
                     <div class="card-title">⭐ Top 3 Movimientos Más Comunes</div>
@@ -347,7 +411,7 @@
 
                         <div class="form-group">
                             <label for="trans-monto">Monto ($ COP):</label>
-                            <input type="number" id="trans-monto" step="100" placeholder="Ej: 2070000" required>
+                            <input type="number" id="trans-monto" step="any" placeholder="Ej: 217089" required>
                         </div>
 
                         <div class="form-group">
@@ -381,10 +445,11 @@
                                 <th style="padding: 0.75rem;">Categoría</th>
                                 <th style="padding: 0.75rem;">Tipo</th>
                                 <th style="padding: 0.75rem; text-align: right;">Monto</th>
+                                <th style="padding: 0.75rem; text-align: center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="fin-table-body">
-                            <tr><td colspan="6" style="padding: 1rem; color: var(--text-muted);">Cargando historial de movimientos...</td></tr>
+                            <tr><td colspan="7" style="padding: 1rem; color: var(--text-muted);">Cargando historial de movimientos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -525,6 +590,70 @@
         </div>
     </div>
 
+    <!-- MODAL EDICIÓN DE TRANSACCIÓN FINANCIERA -->
+    <div class="modal-overlay" id="edit-finance-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <strong style="font-size: 1.1rem; color: var(--accent-blue);">✏️ Editar Movimiento Financiero</strong>
+                <button class="btn btn-small" onclick="closeEditModal()" style="margin-top: 0; background: #334155; color: white;">✕ Cancelar</button>
+            </div>
+            <div class="modal-body" style="background: #0f172a; color: #f8fafc; font-family: 'Outfit', sans-serif;">
+                <form id="edit-finance-form" onsubmit="submitEditTransaction(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <input type="hidden" id="edit-trans-id">
+                    
+                    <div class="form-group">
+                        <label for="edit-trans-cuenta">Cuenta Bancaria:</label>
+                        <select id="edit-trans-cuenta" required>
+                            <option value="BDV">🏦 BDV (Banco Davivienda)</option>
+                            <option value="BLB">🏦 BLB (Bancolombia)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-trans-tipo">Tipo de Operación:</label>
+                        <select id="edit-trans-tipo" required>
+                            <option value="ingreso">🟢 Ingreso (+)</option>
+                            <option value="egreso">🔴 Egreso (-)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-trans-categoria">Categoría:</label>
+                        <select id="edit-trans-categoria" required>
+                            <option value="trabajo">💼 Trabajo / Quincena</option>
+                            <option value="comida">🍽️ Comida</option>
+                            <option value="ocio">🎉 Ocio</option>
+                            <option value="casa">🏠 Casa</option>
+                            <option value="transporte">🚗 Transporte</option>
+                            <option value="otros">📌 Otros</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-trans-monto">Monto ($ COP):</label>
+                        <input type="number" id="edit-trans-monto" step="any" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-trans-fecha">Fecha (DD/MM/YYYY):</label>
+                        <input type="text" id="edit-trans-fecha" required>
+                    </div>
+
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="edit-trans-concepto">Concepto / Descripción:</label>
+                        <input type="text" id="edit-trans-concepto" required>
+                    </div>
+
+                    <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 1rem; margin-top: 0.5rem;">
+                        <button type="button" class="btn btn-small" onclick="closeEditModal()" style="background: #334155; color: white;">Cancelar</button>
+                        <button type="submit" class="btn btn-green" style="margin-top: 0;">💾 Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
     <footer>
         Asistente Agéntico Edge Distribuido &copy; 2026 | Desplegado en Raspberry Pi 5 ARM64
     </footer>
@@ -581,6 +710,35 @@
                 document.getElementById('fin-total-ingresos').textContent = `$${(data.total_ingresos || 0).toLocaleString('es-CO')} COP`;
                 document.getElementById('fin-total-egresos').textContent = `$${(data.total_egresos || 0).toLocaleString('es-CO')} COP`;
 
+                // Calcular Ingresos vs Egresos por Cuenta para los Gráficos de Barras
+                const list = data.ultimos_movimientos || [];
+                let bdvIngreso = 0, bdvEgreso = 0, blbIngreso = 0, blbEgreso = 0;
+                list.forEach(item => {
+                    const m = Number(item.monto || 0);
+                    if (item.cuenta === 'BDV') {
+                        if (item.tipo === 'ingreso') bdvIngreso += m; else bdvEgreso += m;
+                    } else if (item.cuenta === 'BLB') {
+                        if (item.tipo === 'ingreso') blbIngreso += m; else blbEgreso += m;
+                    }
+                });
+
+                document.getElementById('chart-bdv-net').textContent = `Saldo BDV: $${(bdvIngreso - bdvEgreso).toLocaleString('es-CO')} COP`;
+                document.getElementById('chart-bdv-ingreso-val').textContent = `$${bdvIngreso.toLocaleString('es-CO')} COP`;
+                document.getElementById('chart-bdv-egreso-val').textContent = `$${bdvEgreso.toLocaleString('es-CO')} COP`;
+
+                const bdvMax = Math.max(bdvIngreso, bdvEgreso, 1);
+                document.getElementById('chart-bdv-ingreso-bar').style.width = `${Math.min(100, (bdvIngreso / bdvMax) * 100)}%`;
+                document.getElementById('chart-bdv-egreso-bar').style.width = `${Math.min(100, (bdvEgreso / bdvMax) * 100)}%`;
+
+                document.getElementById('chart-blb-net').textContent = `Saldo BLB: $${(blbIngreso - blbEgreso).toLocaleString('es-CO')} COP`;
+                document.getElementById('chart-blb-ingreso-val').textContent = `$${blbIngreso.toLocaleString('es-CO')} COP`;
+                document.getElementById('chart-blb-egreso-val').textContent = `$${blbEgreso.toLocaleString('es-CO')} COP`;
+
+                const blbMax = Math.max(blbIngreso, blbEgreso, 1);
+                document.getElementById('chart-blb-ingreso-bar').style.width = `${Math.min(100, (blbIngreso / blbMax) * 100)}%`;
+                document.getElementById('chart-blb-egreso-bar').style.width = `${Math.min(100, (blbEgreso / blbMax) * 100)}%`;
+
+                // Top 3 Movimientos
                 const topContainer = document.getElementById('fin-top-movimientos');
                 const tops = data.top_3_movimientos || [];
                 if (tops.length === 0) {
@@ -599,10 +757,10 @@
                     `).join('');
                 }
 
+                // Tabla de Movimientos
                 const tableBody = document.getElementById('fin-table-body');
-                const list = data.ultimos_movimientos || [];
                 if (list.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" style="padding: 1rem; color: var(--text-muted);">No hay transacciones registradas.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="7" style="padding: 1rem; color: var(--text-muted);">No hay transacciones registradas.</td></tr>`;
                 } else {
                     tableBody.innerHTML = list.map(item => {
                         const isIngreso = item.tipo === 'ingreso';
@@ -614,6 +772,8 @@
                             ? `<span style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">BDV</span>`
                             : `<span style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">BLB</span>`;
 
+                        const cleanConcepto = (item.concepto || '').replace(/'/g, "\\'");
+
                         return `
                             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                                 <td style="padding: 0.75rem; color: var(--text-muted);">${item.fecha}</td>
@@ -624,12 +784,81 @@
                                 <td style="padding: 0.75rem; text-align: right; font-weight: 700; color: ${isIngreso ? 'var(--accent-green)' : '#ef4444'};">
                                     ${isIngreso ? '+' : '-'}$${(item.monto || 0).toLocaleString('es-CO')}
                                 </td>
+                                <td style="padding: 0.75rem; text-align: center;">
+                                    <div style="display: flex; justify-content: center; gap: 0.35rem;">
+                                        <button class="btn btn-small" onclick="openEditModal(${item.id}, '${item.cuenta}', '${item.tipo}', '${item.categoria}', ${item.monto}, '${item.fecha}', '${cleanConcepto}')" style="background: #334155; color: white;" title="Editar">✏️</button>
+                                        <button class="btn btn-small btn-red" onclick="deleteTransaction(${item.id}, '${cleanConcepto}')" title="Eliminar">🗑️</button>
+                                    </div>
+                                </td>
                             </tr>
                         `;
                     }).join('');
                 }
             } catch (err) {
                 console.error('Error al cargar dashboard financiero:', err);
+            }
+        }
+
+        function openEditModal(id, cuenta, tipo, categoria, monto, fecha, concepto) {
+            document.getElementById('edit-trans-id').value = id;
+            document.getElementById('edit-trans-cuenta').value = cuenta;
+            document.getElementById('edit-trans-tipo').value = tipo;
+            document.getElementById('edit-trans-categoria').value = categoria;
+            document.getElementById('edit-trans-monto').value = monto;
+            document.getElementById('edit-trans-fecha').value = fecha;
+            document.getElementById('edit-trans-concepto').value = concepto;
+            document.getElementById('edit-finance-modal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-finance-modal').style.display = 'none';
+        }
+
+        async function submitEditTransaction(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-trans-id').value;
+            const cuenta = document.getElementById('edit-trans-cuenta').value;
+            const tipo = document.getElementById('edit-trans-tipo').value;
+            const categoria = document.getElementById('edit-trans-categoria').value;
+            const monto = parseFloat(document.getElementById('edit-trans-monto').value);
+            const fecha = document.getElementById('edit-trans-fecha').value;
+            const concepto = document.getElementById('edit-trans-concepto').value;
+
+            try {
+                const res = await fetch(`/api/tools/finance/transaction/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cuenta, tipo, categoria, monto, fecha, concepto })
+                });
+
+                if (res.ok) {
+                    closeEditModal();
+                    showMsg('✅ Transacción actualizada correctamente.', true, 'fin-msg-box');
+                    loadFinanceDashboard();
+                } else {
+                    showMsg('❌ Error al actualizar la transacción.', false, 'fin-msg-box');
+                }
+            } catch (err) {
+                showMsg(`❌ Error de red: ${err.message}`, false, 'fin-msg-box');
+            }
+        }
+
+        async function deleteTransaction(id, concepto) {
+            if (!confirm(`¿Estás seguro de que deseas eliminar la transacción: "${concepto}"?`)) return;
+
+            try {
+                const res = await fetch(`/api/tools/finance/transaction/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    showMsg('✅ Transacción eliminada exitosamente.', true, 'fin-msg-box');
+                    loadFinanceDashboard();
+                } else {
+                    showMsg('❌ Error al eliminar la transacción.', false, 'fin-msg-box');
+                }
+            } catch (err) {
+                showMsg(`❌ Error de red: ${err.message}`, false, 'fin-msg-box');
             }
         }
 
@@ -648,6 +877,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cuenta, tipo, categoria, monto, fecha, concepto })
                 });
+
                 if (res.ok) {
                     showMsg('✅ Transacción registrada con éxito en la base de datos.', true, 'fin-msg-box');
                     document.getElementById('trans-monto').value = '';

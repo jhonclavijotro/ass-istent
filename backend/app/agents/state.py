@@ -20,7 +20,8 @@ class AgentState(TypedDict):
     # Contextos de herramientas acumulados
     research_context: Optional[str]
     obsidian_context: Optional[str]
-    finance_context: Optional[str]
+    latex_context: Optional[str]
+    coding_context: Optional[str]
     email_context: Optional[str]
     
     # Campos de Harness Engineering & Human-In-The-Loop (HITL)

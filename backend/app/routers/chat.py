@@ -34,9 +34,18 @@ class SelectPcModelRequest(BaseModel):
     model: str
 
 class UpdatePcUrlRequest(BaseModel):
-    pc_url: str
+    pc_url: Optional[str] = None
+    url: Optional[str] = None
+
+class SetGeminiKeyRequest(BaseModel):
+    api_key: str
+
+class SelectGeminiModelRequest(BaseModel):
+    model_id: Optional[str] = None
+    model: Optional[str] = None
 
 @router.post("/chat", response_model=ChatResponse)
+@router.post("/chat/query", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     """Endpoint principal de interacción agéntica"""
     thread_id = request.thread_id or "thread_main_user"
@@ -51,7 +60,8 @@ async def chat_endpoint(request: ChatRequest):
         "active_model": "",
         "research_context": None,
         "obsidian_context": None,
-        "finance_context": None,
+        "latex_context": None,
+        "coding_context": None,
         "email_context": None,
         "pending_action": None,
         "user_approval_status": None,
@@ -171,10 +181,34 @@ def select_pc_model(request: SelectPcModelRequest):
 @router.post("/system/update-pc-url")
 def update_pc_url(request: UpdatePcUrlRequest):
     """Permite al usuario actualizar la dirección IP/URL de Ollama en su PC Local"""
-    llm_router.update_pc_url(request.pc_url)
+    target_url = request.pc_url or request.url or "http://192.168.1.9:11434"
+    llm_router.update_pc_url(target_url)
     return {
         "status": "success",
         "ollama_pc_url": llm_router.ollama_pc_url
+    }
+
+@router.post("/system/set-gemini-key")
+async def set_gemini_key_sys(request: SetGeminiKeyRequest):
+    """Guarda la API Key de Gemini y recupera modelos disponibles"""
+    models = await gemini_service.update_key_and_get_models(request.api_key.strip())
+    return {
+        "status": "success",
+        "message": "API Key de Gemini almacenada.",
+        "active_model": gemini_service.get_active_model_id(),
+        "available_models": models
+    }
+
+@router.post("/system/select-gemini-model")
+def select_gemini_model_sys(request: SelectGeminiModelRequest):
+    """Selecciona el modelo activo de Gemini"""
+    m = request.model_id or request.model
+    if m:
+        gemini_service.set_active_model(m.strip())
+    return {
+        "status": "success",
+        "message": f"Modelo activo actualizado a {gemini_service.get_active_model_id()}.",
+        "active_model": gemini_service.get_active_model_id()
     }
 
 @router.get("/system/status")
@@ -187,33 +221,36 @@ async def system_status():
     pc_models = await llm_router.fetch_pc_ollama_models()
     
     return {
+        "selected_provider": llm_router.selected_provider,
         "selected_provider_mode": llm_router.selected_provider,
-        "tier1_pc": {
-            "name": "PC Local LAN",
-            "model": llm_router.ollama_pc_model,
-            "url": llm_router.ollama_pc_url,
-            "available": pc_ok,
-            "latency_ms": pc_lat,
-            "detail": pc_msg,
-            "available_models": pc_models
-        },
-        "tier2_cloud": {
-            "name": "Gemini Cloud API",
-            "model": gemini_service.get_active_model_id(),
-            "available": gemini_ok,
-            "latency_ms": 0.0,
-            "detail": gemini_msg
-        },
-        "tier3_rpi": {
-            "name": "RPi Local Edge",
-            "model": llm_router.ollama_rpi_model,
-            "url": llm_router.ollama_rpi_url,
-            "available": rpi_ok,
-            "latency_ms": rpi_lat,
-            "detail": rpi_msg
-        },
-        "active_provider": {
-            "tier": active_tier,
-            "model": active_model
+        "ollama_pc_model": llm_router.ollama_pc_model,
+        "ollama_pc_url": llm_router.ollama_pc_url,
+        "gemini_model": gemini_service.get_active_model_id(),
+        "active_provider": active_tier,
+        "providers": {
+            "tier1_pc": {
+                "name": "PC Local LAN",
+                "model": llm_router.ollama_pc_model,
+                "url": llm_router.ollama_pc_url,
+                "available": pc_ok,
+                "latency_ms": pc_lat,
+                "message": pc_msg,
+                "available_models": pc_models
+            },
+            "tier2_cloud": {
+                "name": "Gemini Cloud API",
+                "model": gemini_service.get_active_model_id(),
+                "available": gemini_ok,
+                "latency_ms": 0.0,
+                "message": gemini_msg
+            },
+            "tier3_rpi": {
+                "name": "RPi Local Edge",
+                "model": llm_router.ollama_rpi_model,
+                "url": llm_router.ollama_rpi_url,
+                "available": rpi_ok,
+                "latency_ms": rpi_lat,
+                "message": rpi_msg
+            }
         }
     }

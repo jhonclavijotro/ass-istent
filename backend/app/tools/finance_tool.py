@@ -122,7 +122,7 @@ class StructuredFinanceManager:
         categoria_counter = Counter()
 
         parsed_records = []
-        for r in records:
+        for idx, r in enumerate(records):
             cuenta = r.get("cuenta", "BDV").upper()
             tipo = r.get("tipo", "ingreso").lower()
             concepto = r.get("concepto", "Transacción").strip()
@@ -145,6 +145,7 @@ class StructuredFinanceManager:
             categoria_counter[categoria] += 1
 
             parsed_records.append({
+                "id": idx,
                 "fecha": r.get("fecha", "14/08/2026"),
                 "concepto": concepto,
                 "monto": round(monto, 2),
@@ -178,6 +179,92 @@ class StructuredFinanceManager:
             "ultimos_movimientos": list(reversed(parsed_records))
         }
 
+    def update_transaction(
+        self,
+        record_id: int,
+        cuenta: str,
+        monto: float,
+        fecha: str,
+        tipo: str,
+        categoria: str,
+        concepto: str
+    ) -> Dict[str, Any]:
+        """Actualiza una transacción existente por su ID (índice)"""
+        self._ensure_seed_data()
+        records = []
+        try:
+            with open(self.db_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                records = list(reader)
+        except Exception as e:
+            return {"status": "error", "message": f"Error leyendo CSV: {e}"}
+
+        if record_id < 0 or record_id >= len(records):
+            return {"status": "error", "message": f"Registro con ID {record_id} no encontrado."}
+
+        cuenta_upper = cuenta.upper().strip()
+        if cuenta_upper not in VALID_CUENTAS:
+            cuenta_upper = "BDV" if "BDV" in cuenta_upper or "DAVIVIENDA" in cuenta_upper else "BLB"
+
+        tipo_clean = tipo.lower().strip()
+        if tipo_clean not in VALID_TIPOS:
+            tipo_clean = "ingreso" if "ingreso" in tipo_clean else "egreso"
+
+        cat_clean = categoria.lower().strip()
+        if cat_clean not in VALID_CATEGORIAS:
+            cat_clean = "otros"
+
+        clean_monto = abs(float(monto))
+
+        records[record_id] = {
+            "fecha": fecha.strip(),
+            "concepto": concepto.strip(),
+            "monto": f"{clean_monto:.2f}",
+            "cuenta": cuenta_upper,
+            "tipo": tipo_clean,
+            "categoria": cat_clean
+        }
+
+        try:
+            fieldnames = ["fecha", "concepto", "monto", "cuenta", "tipo", "categoria"]
+            with open(self.db_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(records)
+            logger.info(f"Transacción {record_id} actualizada exitosamente.")
+            return {"status": "success", "record": records[record_id]}
+        except Exception as e:
+            logger.error(f"Error actualizando transacción {record_id}: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def delete_transaction(self, record_id: int) -> Dict[str, Any]:
+        """Elimina una transacción por su ID (índice)"""
+        self._ensure_seed_data()
+        records = []
+        try:
+            with open(self.db_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                records = list(reader)
+        except Exception as e:
+            return {"status": "error", "message": f"Error leyendo CSV: {e}"}
+
+        if record_id < 0 or record_id >= len(records):
+            return {"status": "error", "message": f"Registro con ID {record_id} no encontrado."}
+
+        removed = records.pop(record_id)
+
+        try:
+            fieldnames = ["fecha", "concepto", "monto", "cuenta", "tipo", "categoria"]
+            with open(self.db_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(records)
+            logger.info(f"Transacción {record_id} eliminada exitosamente.")
+            return {"status": "success", "removed_record": removed}
+        except Exception as e:
+            logger.error(f"Error eliminando transacción {record_id}: {e}")
+            return {"status": "error", "message": str(e)}
+
     # Compatibilidad con métodos anteriores
     def list_financial_files() -> List[str]:
         return ["finanzas_db.csv"]
@@ -198,3 +285,4 @@ class StructuredFinanceManager:
         }
 
 finance_manager = StructuredFinanceManager()
+

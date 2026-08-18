@@ -131,6 +131,12 @@ def get_finance_dashboard():
     """Devuelve el resumen completo del Dashboard financiero (Saldos por cuenta BDV/BLB, Top 3 Movimientos y Últimos Movimientos)"""
     return finance_manager.get_dashboard_summary()
 
+@router.get("/finance/files")
+def list_finance_files():
+    """Lista los archivos de base de datos financieras"""
+    return {"files": finance_manager.list_financial_files()}
+
+
 @router.post("/finance/transaction")
 def add_finance_transaction(req: TransactionRequest):
     """Registra un nuevo movimiento financiero cumpliendo el esquema estricto (cuenta, monto, fecha, tipo, categoría)"""
@@ -146,7 +152,32 @@ def add_finance_transaction(req: TransactionRequest):
         raise HTTPException(status_code=500, detail=res.get("message", "Error al registrar la transacción."))
     return res
 
+@router.put("/finance/transaction/{record_id}")
+def update_finance_transaction(record_id: int, req: TransactionRequest):
+    """Modifica una transacción existente por su ID"""
+    res = finance_manager.update_transaction(
+        record_id=record_id,
+        cuenta=req.cuenta,
+        monto=req.monto,
+        fecha=req.fecha or "14/08/2026",
+        tipo=req.tipo,
+        categoria=req.categoria,
+        concepto=req.concepto
+    )
+    if res.get("status") != "success":
+        raise HTTPException(status_code=500, detail=res.get("message", "Error al actualizar la transacción."))
+    return res
+
+@router.delete("/finance/transaction/{record_id}")
+def delete_finance_transaction(record_id: int):
+    """Elimina una transacción por su ID"""
+    res = finance_manager.delete_transaction(record_id=record_id)
+    if res.get("status") != "success":
+        raise HTTPException(status_code=500, detail=res.get("message", "Error al eliminar la transacción."))
+    return res
+
 @router.get("/google/status")
 def google_status():
     """Estado de la integración de Google Workspace"""
     return google_workspace_manager.get_integration_status()
+
