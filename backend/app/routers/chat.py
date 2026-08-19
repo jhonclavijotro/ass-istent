@@ -14,7 +14,8 @@ class ChatRequest(BaseModel):
 
 class ActionApprovalRequest(BaseModel):
     thread_id: str
-    action_id: str
+    action_id: Optional[str] = None
+    approved: Optional[bool] = True
     feedback: Optional[str] = None
 
 class ChatResponse(BaseModel):

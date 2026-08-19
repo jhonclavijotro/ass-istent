@@ -1120,12 +1120,16 @@
             document.getElementById('hitl-modal').style.display = 'none';
             if (!activePendingAction) return;
 
+            const endpoint = approved ? '/api/chat/approve-action' : '/api/chat/reject-action';
+            const actId = activePendingAction.action_id || 'act-1';
+
             try {
-                const res = await fetch('/api/chat/approve-action', {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         thread_id: currentThreadId,
+                        action_id: actId,
                         approved: approved,
                         feedback: approved ? 'Aprobado por el usuario en interfaz web.' : 'Rechazado por el usuario.'
                     })
@@ -1135,7 +1139,18 @@
                     const data = await res.json();
                     appendMessage('agent', data.response, data.active_tier || 'HITL Executed', 'Action Complete');
                 } else {
-                    appendMessage('agent', '❌ Error al procesar la respuesta de aprobación.');
+                    let errMsg = 'Error al procesar la respuesta de aprobación.';
+                    try {
+                        const errData = await res.json();
+                        if (errData && errData.detail) {
+                            if (Array.isArray(errData.detail)) {
+                                errMsg = errData.detail.map(d => `${d.loc ? d.loc.join('.') : 'error'}: ${d.msg}`).join(', ');
+                            } else {
+                                errMsg = errData.detail;
+                            }
+                        }
+                    } catch(e) {}
+                    appendMessage('agent', `❌ ${errMsg}`);
                 }
             } catch (err) {
                 appendMessage('agent', `❌ Error enviando aprobación: ${err.message}`);
