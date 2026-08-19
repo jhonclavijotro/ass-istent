@@ -69,4 +69,35 @@ class ObsidianVaultManager:
                 })
         return results
 
+    def delete_note(self, filename: str) -> bool:
+        """Elimina físicamente una nota Markdown de la bóveda de Obsidian"""
+        if not filename.endswith(".md"):
+            filename += ".md"
+        full_path = os.path.join(self.vault_dir, filename)
+        if os.path.exists(full_path):
+            try:
+                os.remove(full_path)
+                logger.info(f"Nota Obsidian '{filename}' eliminada exitosamente.")
+                return True
+            except Exception as e:
+                logger.error(f"Error al eliminar nota Obsidian '{filename}': {e}")
+                return False
+        return False
+
+    def delete_folder_contents(self, folder_name: str) -> int:
+        """Elimina todas las notas Markdown dentro de una subcarpeta específica de la bóveda"""
+        target_dir = os.path.join(self.vault_dir, folder_name)
+        if not os.path.exists(target_dir):
+            return 0
+        count = 0
+        pattern = os.path.join(target_dir, "*.md")
+        files = glob.glob(pattern)
+        for f in files:
+            try:
+                os.remove(f)
+                count += 1
+            except Exception as e:
+                logger.error(f"Error al borrar archivo {f}: {e}")
+        return count
+
 obsidian_manager = ObsidianVaultManager()

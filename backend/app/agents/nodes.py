@@ -28,7 +28,7 @@ async def supervisor_node(state: AgentState) -> AgentState:
     if re.search(r'\b(última|ultima|anterior|anteriormente|historial|pregunté|pregunte|solicitud|dije)\b', query):
         state["current_agent"] = "writer_agent"
     # 1. Investigación Académica
-    elif re.search(r'\b(arxiv|sciencedirect|websearch|paper|doi|notebooklm|investigación|investigacion|investigar)\b', query) or re.search(r'\binvestiga\b', query):
+    elif re.search(r'\b(arxiv|sciencedirect|websearch|paper|doi|notebooklm|investigación|investigacion|investigar|investigaciones|artículo|artículos|articulo|articulos)\b', query) or re.search(r'\binvestiga\b', query):
         state["current_agent"] = "research_agent"
     # 2. Obsidian y Memoria
     elif re.search(r'\b(obsidian|bóveda|boveda|nota|memoria|gustos|preferencia|histórico|historico|relaciones|guardar|registra|almacenar)\b', query):
@@ -54,63 +54,92 @@ async def supervisor_node(state: AgentState) -> AgentState:
 # -------------------------------------------------------------------
 async def research_node(state: AgentState) -> AgentState:
     """Agente Investigador: Búsqueda y análisis dinámico de literatura académica real.
-    Registra informes estructurados en la Bóveda de Obsidian cuando se solicita."""
+    Soporta eliminación de archivos previos en Bóveda, nombres de archivo explícitos y filtros de año (2022-2026)."""
     history = state.get("agent_history", [])
-    history.append("Agente Investigador: Ejecutando análisis dinámico en arXiv, ScienceDirect y WebSearch")
+    history.append("Agente Investigador: Ejecutando análisis dinámico de investigación y gestión de Bóveda")
     
     query = state["user_query"]
     q_lower = query.lower()
     
-    should_save = any(k in q_lower for k in ["guarda", "guardar", "almacenar", "salva", "salvar", "registra", "registrar", "bóveda", "boveda"])
+    should_save = any(k in q_lower for k in ["guarda", "guardar", "almacenar", "salva", "salvar", "registra", "registrar", "bóveda", "boveda", "crear un archivo", "crea un archivo", "crear archivo"])
+    should_delete = any(k in q_lower for k in ["elimina", "eliminar", "borra", "borrar", "limpia", "limpiar"])
     
-    # Extraer limpio el tema principal sin mutilar palabras compuestas en español
-    clean_topic = re.sub(r'^(quiero\s+comenzar\s+la\s+investigación\s+sobre|investiga\s+sobre|busca\s+artículos\s+sobre|crea\s+una\s+selección\s+de\s+al\s+menos\s+\d+\s+artículos\s+relacionados\s+a|busca\s+información\s+de|investiga|busca)\s*', '', query, flags=re.IGNORECASE).strip()
-    clean_topic = re.sub(r'\s*(y\s+guarda.*|en\s+la\s+bóveda.*)$', '', clean_topic, flags=re.IGNORECASE).strip()
-    if not clean_topic:
-        clean_topic = "Sistemas Multiagentes Aplicados a Redes Eléctricas"
-        
-    # Solicitar al LLM Router la generación dinámica de los artículos académicos requeridos
+    # 1. Gestionar eliminación previa si el usuario la solicitó explícitamente
+    deleted_files_info = ""
+    if should_delete:
+        if "investigaciones" in q_lower or "folder" in q_lower or "carpeta" in q_lower:
+            deleted_count = obsidian_manager.delete_folder_contents("Investigaciones")
+            deleted_files_info = f"🗑️ Se eliminaron {deleted_count} archivo(s) previo(s) en la carpeta /data/obsidian/Investigaciones/."
+            history.append(f"Investigador -> Obsidian: {deleted_files_info}")
+
+    # 2. Extracción de nombre de archivo explícito indicado por el usuario (ej. llamado "Sistemas_multi_agente.md")
+    quoted_match = re.search(r'["\']([a-zA-Z0-9_\-\.]+)["\']', query)
+    keyword_match = re.search(r'(?:llamado|nombrado|titulado)\s+["\']?([a-zA-Z0-9_\-\.]+)["\']?', query, re.IGNORECASE)
+    
+    if quoted_match:
+        raw_filename = quoted_match.group(1).strip()
+    elif keyword_match:
+        raw_filename = keyword_match.group(1).strip()
+    else:
+        raw_filename = ""
+
+    if raw_filename and len(raw_filename) > 3 and not raw_filename.lower().startswith("llamado"):
+        if not raw_filename.endswith(".md"):
+            raw_filename += ".md"
+        filename_clean = raw_filename
+    else:
+        # Limpieza inteligente del tema eliminando quejas o frases introductorias
+        clean_topic = re.sub(r'^(no\s+estás\s+haciendo.*?\.\s*|quiero\s+comenzar\s+la\s+investigación\s+sobre|investiga\s+sobre|busca\s+artículos\s+sobre|crea\s+una\s+selección\s+de\s+al\s+menos\s+\d+\s+artículos\s+relacionados\s+a|busca\s+información\s+de|investiga|busca)\s*', '', query, flags=re.IGNORECASE).strip()
+        clean_topic = re.sub(r'\s*(y\s+guarda.*|en\s+la\s+bóveda.*|debes\s+realizar.*)$', '', clean_topic, flags=re.IGNORECASE).strip()
+        if not clean_topic or len(clean_topic) < 5 or "haciendo" in clean_topic.lower():
+            clean_topic = "Sistemas_multi_agente"
+            
+        filename_clean = re.sub(r'[^a-zA-Z0-9_]', '_', clean_topic.replace(' ', '_'))[:40].strip('_')
+        if not filename_clean.endswith(".md"):
+            filename_clean += ".md"
+
+    filename = f"Investigaciones/{filename_clean}"
+    
+    # 3. Prompt de generación dinámica con contextualización explícita del año actual (2026)
     prompt_investigacion = (
-        f"Genera una revisión analítica detallada sobre el tema: '{clean_topic}'.\n"
-        f"Incluye la selección de al menos 10 artículos académicos relevantes (reales o altamente representativos de la literatura científica).\n"
-        f"Para cada uno de los 10 artículos, proporciona:\n"
+        f"Requerimiento específico del usuario: '{query}'.\n\n"
+        f"CONTEXTO IMPORTANTE DEL SISTEMA: El año actual es 2026. Al solicitar artículos 'posteriores al 2022' o 'desde 2022 hasta la actualidad', debes incluir publicaciones académicas de los años 2022, 2023, 2024, 2025 y 2026.\n\n"
+        f"Proporciona la selección de al menos 10 artículos académicos relevantes (publicados entre 2022 y 2026) con:\n"
         f"1. Título completo del artículo\n"
-        f"2. Autores y Año de Publicación\n"
+        f"2. Autores y Año de Publicación (2022-2026)\n"
         f"3. DOI o Enlace oficial de consulta\n"
         f"4. Resumen analítico y aportes clave al tema de investigación.\n"
     )
     
-    llm_res = await llm_router.generate_response(prompt=prompt_investigacion, system_prompt="Eres un Agente Investigador Académico especializado en ciencia de datos, inteligencia artificial y energía.")
-    analisis_completo = llm_res.get("response", f"Informe sintético de investigación sobre {clean_topic}.")
-    
-    filename_clean = re.sub(r'[^a-zA-Z0-9_]', '_', clean_topic.replace(' ', '_'))[:40].strip('_')
-    if not filename_clean: filename_clean = "Investigacion_Especializada"
-    filename = f"Investigaciones/{filename_clean}.md"
+    llm_res = await llm_router.generate_response(
+        prompt=prompt_investigacion,
+        system_prompt="Eres un Agente Investigador Académico especializado en ciencia de datos, inteligencia artificial y energía. El año actual de referencia del sistema es 2026."
+    )
+    analisis_completo = llm_res.get("response", "Informe sintético de investigación sobre Sistemas Multiagentes.")
     
     if should_save:
         note_content = (
-            f"# 📄 Informe de Investigación Académica: {clean_topic.title()}\n\n"
-            f"- **Tema:** {clean_topic}\n"
-            f"- **Fecha de Registro:** Generado y registrado por el Agente Investigador.\n\n"
-            f"## 📚 Artículos y Revisión de Literatura\n\n"
+            f"# 📄 Informe de Investigación Académica: {filename_clean.replace('.md', '').replace('_', ' ').title()}\n\n"
+            f"- **Periodo de Cobertura:** 2022 - 2026 (Actualidad)\n"
+            f"- **Fecha de Registro:** Registrado por el Agente Investigador de Antigravity.\n\n"
+            f"## 📚 Artículos y Revisión de Literatura (2022-2026)\n\n"
             f"{analisis_completo}\n"
         )
         ok = obsidian_manager.create_or_update_note(filename, note_content, append=False)
         if ok:
-            history.append(f"Investigador -> Obsidian: Informe registrado exitosamente en Bóveda (/data/obsidian/{filename}).")
-            state["research_context"] = (
-                f"✅ INFORME DE INVESTIGACIÓN ALMACENADO EN OBSIDIAN (`/data/obsidian/{filename}`):\n\n"
-                f"{analisis_completo}"
-            )
+            history.append(f"Investigador -> Obsidian: Informe creado en Bóveda (/data/obsidian/{filename}).")
+            context_msg = f"✅ INFORME REGISTRADO EN OBSIDIAN (`/data/obsidian/{filename}`):\n\n{analisis_completo}"
+            if deleted_files_info:
+                context_msg = f"{deleted_files_info}\n\n{context_msg}"
+            state["research_context"] = context_msg
         else:
             state["research_context"] = "❌ Falló el guardado en Bóveda de Obsidian."
     else:
-        history.append("Investigador: Análisis dinámico de investigación completado.")
-        state["research_context"] = (
-            f"🔍 ANÁLISIS INVESTIGATIVO ACADÉMICO ({clean_topic}):\n\n"
-            f"{analisis_completo}\n\n"
-            f"📌 Nota: Si deseas almacenar esta investigación en la Bóveda de Obsidian, indícamelo expresamente."
-        )
+        history.append("Investigador: Análisis dinámico completado.")
+        context_msg = f"🔍 ANÁLISIS INVESTIGATIVO ACADÉMICO (2022-2026):\n\n{analisis_completo}"
+        if deleted_files_info:
+            context_msg = f"{deleted_files_info}\n\n{context_msg}"
+        state["research_context"] = context_msg
         
     state["agent_history"] = history
     return state
