@@ -9,6 +9,8 @@ from app.tools.obsidian_tool import obsidian_manager
 from app.tools.filesystem_tool import filesystem_manager
 from app.tools.google_workspace import google_workspace_manager
 from app.tools.notebook_tool import notebook_analyzer
+from app.tools.pdf_downloader import pdf_downloader
+from app.tools.notebooklm_mcp import notebooklm_mcp
 
 logger = logging.getLogger("agent_nodes")
 
@@ -51,10 +53,10 @@ async def supervisor_node(state: AgentState) -> AgentState:
 # 2. AGENTE INVESTIGADOR (arXiv, ScienceDirect, WebSearch, NotebookLM MCP)
 # -------------------------------------------------------------------
 async def research_node(state: AgentState) -> AgentState:
-    """Agente Investigador PURO: Búsqueda y análisis dinámico de literatura académica asistido por NotebookLM Tool.
-    NO modifica el disco. Delega el almacenamiento/borrado al Agente Bóveda Obsidian."""
+    """Agente Investigador PURO: Búsqueda y análisis dinámico de literatura académica asistido por NotebookLM MCP y PDF Downloader.
+    NO modifica el disco de Obsidian. Delega el almacenamiento/borrado al Agente Bóveda Obsidian."""
     history = state.get("agent_history", [])
-    history.append("Agente Investigador: Ejecutando análisis académico grounded con motor NotebookLM (2022-2026)")
+    history.append("Agente Investigador: Ejecutando análisis académico grounded con NotebookLM MCP (2022-2026)")
     
     query = state["user_query"]
     q_lower = query.lower()
@@ -68,12 +70,16 @@ async def research_node(state: AgentState) -> AgentState:
     if not clean_topic or len(clean_topic) < 5 or "haciendo" in clean_topic.lower():
         clean_topic = "Sistemas Multiagentes Aplicados a Redes Eléctricas"
 
-    # Ejecutar análisis profundo grounded utilizando la herramienta NotebookLM
+    # 1. Registrar cuaderno temático en NotebookLM MCP
+    nb = notebooklm_mcp.create_notebook(f"Investigación: {clean_topic[:30]}")
+    history.append(f"NotebookLM MCP: Cuaderno de investigación '{nb['title']}' configurado con ID '{nb['notebook_id']}'.")
+
+    # 2. Ejecutar análisis profundo grounded con el motor NotebookLM
     nb_res = await notebook_analyzer.analyze_research_topic(topic=clean_topic, user_query=query, num_articles=10)
     analisis_completo = nb_res.get("analysis_markdown", "Análisis de investigación no disponible.")
     
-    history.append(f"Investigador: Análisis grounded NotebookLM completado ({nb_res.get('provider')}).")
-    state["research_context"] = f"🔬 ANÁLISIS ACADÉMICO NOTEBOOKLM (2022-2026):\n\n{analisis_completo}"
+    history.append(f"Investigador: Análisis grounded NotebookLM MCP completado ({nb_res.get('provider')}).")
+    state["research_context"] = f"🔬 ANÁLISIS ACADÉMICO NOTEBOOKLM MCP (2022-2026):\n\n{analisis_completo}"
     
     # Si se solicitó guardar o borrar en Obsidian, transferir la estafeta al Agente Bóveda de Obsidian
     if should_save or should_delete:
