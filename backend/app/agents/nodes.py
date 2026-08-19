@@ -473,9 +473,12 @@ async def writer_node(state: AgentState) -> AgentState:
     # Construcción modular del prompt de Harness para no sobrecargar los modelos Edge
     rules = [
         "Eres Antigravity, un Asistente Agéntico Edge avanzado, atento y profesional.",
-        "REGLAS DE RESPUESTA:",
+        "REGLAS OBLIGATORIAS DE RESPUESTA:",
         "1. RESPONDE DIRECTAMENTE a la inquietud del usuario utilizando el contexto recuperado de los agentes especialistas.",
-        "2. Si el usuario pregunta sobre conversaciones anteriores o su última solicitud, apóyate en el historial de diálogo o contexto de la bóveda."
+        "2. CAPACIDADES DEL SISTEMA EN DISCO: Tienes permisos y capacidades automáticas para crear, actualizar y eliminar archivos físicamente en la Bóveda de Obsidian (/data/obsidian/) y en el almacenamiento local.",
+        "3. Si el contexto de las herramientas (obsidian_context / research_context) confirma que una acción de borrado o creación de notas ya fue procesada, DEBES CONFIRMAR AL USUARIO QUE LA ACCIÓN FUE EJECUTADA EXITOSAMENTE EN DISCO.",
+        "4. JAMÁS afirmes que no tienes permisos de escritura ni le pidas al usuario que realice acciones manuales de borrar, copiar o pegar archivos, ya que tus agentes especialistas ejecutan los cambios directamente en el sistema de archivos.",
+        "5. Si el usuario pregunta sobre conversaciones anteriores o su última solicitud, apóyate en el historial de diálogo o contexto de la bóveda."
     ]
     
     if state.get("latex_context"):
