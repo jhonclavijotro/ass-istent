@@ -6,7 +6,7 @@ from collections import Counter
 
 logger = logging.getLogger("finance_tool")
 
-FINANZAS_DIR = "/app/data/finanzas" if os.path.exists("/app/data/finanzas") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "finanzas"))
+FINANZAS_DIR = "/app/data/finanzas" if os.path.exists("/app/data/finanzas") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "finanzas"))
 FINANZAS_CSV = os.path.join(FINANZAS_DIR, "finanzas_db.csv")
 
 VALID_CUENTAS = ["BLB", "BDV"]

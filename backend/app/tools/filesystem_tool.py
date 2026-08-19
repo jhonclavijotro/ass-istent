@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger("filesystem_tool")
 
 # Directorio base permitido para operaciones de archivo en la RPi 5
-BASE_DATA_DIR = "/app/data" if os.path.exists("/app/data") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data"))
+BASE_DATA_DIR = "/app/data" if os.path.exists("/app/data") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data"))
 
 class FileSystemManager:
     def __init__(self, base_dir: str = BASE_DATA_DIR):

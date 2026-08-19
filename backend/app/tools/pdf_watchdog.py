@@ -10,7 +10,7 @@ from qdrant_client.http.models import Distance, VectorParams, PointStruct
 
 logger = logging.getLogger("pdf_watchdog")
 
-PDFS_DIR = "/app/data/pdfs" if os.path.exists("/app/data/pdfs") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "pdfs"))
+PDFS_DIR = "/app/data/pdfs" if os.path.exists("/app/data/pdfs") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "pdfs"))
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 

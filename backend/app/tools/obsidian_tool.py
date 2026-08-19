@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger("obsidian_tool")
 
-OBSIDIAN_DIR = "/app/data/obsidian" if os.path.exists("/app/data/obsidian") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "obsidian"))
+OBSIDIAN_DIR = "/app/data/obsidian" if os.path.exists("/app/data/obsidian") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "obsidian"))
 
 class ObsidianVaultManager:
     def __init__(self, vault_dir: str = OBSIDIAN_DIR):

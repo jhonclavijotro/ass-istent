@@ -26,7 +26,7 @@ def read_persistent_obsidian_notes() -> str:
     """Lee todas las notas de la Bóveda de Obsidian para inyectarlas como Memoria a Largo Plazo"""
     obs_dirs = [
         "/app/data/obsidian",
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "obsidian"))
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "obsidian"))
     ]
     
     target_dir = None
