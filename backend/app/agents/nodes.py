@@ -8,12 +8,10 @@ from app.core.llm_router import llm_router
 from app.tools.obsidian_tool import obsidian_manager
 from app.tools.filesystem_tool import filesystem_manager
 from app.tools.google_workspace import google_workspace_manager
+from app.tools.notebook_tool import notebook_analyzer
 
 logger = logging.getLogger("agent_nodes")
 
-# -------------------------------------------------------------------
-# 1. NODO COORDINADOR (SUPERVISOR)
-# -------------------------------------------------------------------
 # -------------------------------------------------------------------
 # 1. NODO COORDINADOR (SUPERVISOR)
 # -------------------------------------------------------------------
@@ -53,10 +51,10 @@ async def supervisor_node(state: AgentState) -> AgentState:
 # 2. AGENTE INVESTIGADOR (arXiv, ScienceDirect, WebSearch, NotebookLM MCP)
 # -------------------------------------------------------------------
 async def research_node(state: AgentState) -> AgentState:
-    """Agente Investigador: Búsqueda y análisis dinámico de literatura académica real.
-    Soporta eliminación de archivos previos en Bóveda, nombres de archivo explícitos y filtros de año (2022-2026)."""
+    """Agente Investigador PURO: Búsqueda y análisis dinámico de literatura académica asistido por NotebookLM Tool.
+    NO modifica el disco. Delega el almacenamiento/borrado al Agente Bóveda Obsidian."""
     history = state.get("agent_history", [])
-    history.append("Agente Investigador: Ejecutando análisis dinámico de investigación y gestión de Bóveda")
+    history.append("Agente Investigador: Ejecutando análisis académico grounded con motor NotebookLM (2022-2026)")
     
     query = state["user_query"]
     q_lower = query.lower()
@@ -64,132 +62,110 @@ async def research_node(state: AgentState) -> AgentState:
     should_save = any(k in q_lower for k in ["guarda", "guardar", "almacenar", "salva", "salvar", "registra", "registrar", "bóveda", "boveda", "crear un archivo", "crea un archivo", "crear archivo"])
     should_delete = any(k in q_lower for k in ["elimina", "eliminar", "borra", "borrar", "limpia", "limpiar"])
     
-    # 1. Gestionar eliminación previa si el usuario la solicitó explícitamente
-    deleted_files_info = ""
-    if should_delete:
-        if "investigaciones" in q_lower or "folder" in q_lower or "carpeta" in q_lower:
-            deleted_count = obsidian_manager.delete_folder_contents("Investigaciones")
-            deleted_files_info = f"🗑️ Se eliminaron {deleted_count} archivo(s) previo(s) en la carpeta /data/obsidian/Investigaciones/."
-            history.append(f"Investigador -> Obsidian: {deleted_files_info}")
+    # Extraer tema limpio
+    clean_topic = re.sub(r'^(no\s+estás\s+haciendo.*?\.\s*|quiero\s+comenzar\s+la\s+investigación\s+sobre|investiga\s+sobre|busca\s+artículos\s+sobre|crea\s+una\s+selección\s+de\s+al\s+menos\s+\d+\s+artículos\s+relacionados\s+a|busca\s+información\s+de|investiga|busca)\s*', '', query, flags=re.IGNORECASE).strip()
+    clean_topic = re.sub(r'\s*(y\s+guarda.*|en\s+la\s+bóveda.*|debes\s+realizar.*)$', '', clean_topic, flags=re.IGNORECASE).strip()
+    if not clean_topic or len(clean_topic) < 5 or "haciendo" in clean_topic.lower():
+        clean_topic = "Sistemas Multiagentes Aplicados a Redes Eléctricas"
 
-    # 2. Extracción de nombre de archivo explícito indicado por el usuario (ej. llamado "Sistemas_multi_agente.md")
-    quoted_match = re.search(r'["\']([a-zA-Z0-9_\-\.]+)["\']', query)
-    keyword_match = re.search(r'(?:llamado|nombrado|titulado)\s+["\']?([a-zA-Z0-9_\-\.]+)["\']?', query, re.IGNORECASE)
+    # Ejecutar análisis profundo grounded utilizando la herramienta NotebookLM
+    nb_res = await notebook_analyzer.analyze_research_topic(topic=clean_topic, user_query=query, num_articles=10)
+    analisis_completo = nb_res.get("analysis_markdown", "Análisis de investigación no disponible.")
     
-    if quoted_match:
-        raw_filename = quoted_match.group(1).strip()
-    elif keyword_match:
-        raw_filename = keyword_match.group(1).strip()
-    else:
-        raw_filename = ""
-
-    if raw_filename and len(raw_filename) > 3 and not raw_filename.lower().startswith("llamado"):
-        if not raw_filename.endswith(".md"):
-            raw_filename += ".md"
-        filename_clean = raw_filename
-    else:
-        # Limpieza inteligente del tema eliminando quejas o frases introductorias
-        clean_topic = re.sub(r'^(no\s+estás\s+haciendo.*?\.\s*|quiero\s+comenzar\s+la\s+investigación\s+sobre|investiga\s+sobre|busca\s+artículos\s+sobre|crea\s+una\s+selección\s+de\s+al\s+menos\s+\d+\s+artículos\s+relacionados\s+a|busca\s+información\s+de|investiga|busca)\s*', '', query, flags=re.IGNORECASE).strip()
-        clean_topic = re.sub(r'\s*(y\s+guarda.*|en\s+la\s+bóveda.*|debes\s+realizar.*)$', '', clean_topic, flags=re.IGNORECASE).strip()
-        if not clean_topic or len(clean_topic) < 5 or "haciendo" in clean_topic.lower():
-            clean_topic = "Sistemas_multi_agente"
-            
-        filename_clean = re.sub(r'[^a-zA-Z0-9_]', '_', clean_topic.replace(' ', '_'))[:40].strip('_')
-        if not filename_clean.endswith(".md"):
-            filename_clean += ".md"
-
-    filename = f"Investigaciones/{filename_clean}"
+    history.append(f"Investigador: Análisis grounded NotebookLM completado ({nb_res.get('provider')}).")
+    state["research_context"] = f"🔬 ANÁLISIS ACADÉMICO NOTEBOOKLM (2022-2026):\n\n{analisis_completo}"
     
-    # 3. Prompt de generación dinámica con contextualización explícita del año actual (2026)
-    prompt_investigacion = (
-        f"Requerimiento específico del usuario: '{query}'.\n\n"
-        f"CONTEXTO IMPORTANTE DEL SISTEMA: El año actual es 2026. Al solicitar artículos 'posteriores al 2022' o 'desde 2022 hasta la actualidad', debes incluir publicaciones académicas de los años 2022, 2023, 2024, 2025 y 2026.\n\n"
-        f"Proporciona la selección de al menos 10 artículos académicos relevantes (publicados entre 2022 y 2026) con:\n"
-        f"1. Título completo del artículo\n"
-        f"2. Autores y Año de Publicación (2022-2026)\n"
-        f"3. DOI o Enlace oficial de consulta\n"
-        f"4. Resumen analítico y aportes clave al tema de investigación.\n"
-    )
+    # Si se solicitó guardar o borrar en Obsidian, transferir la estafeta al Agente Bóveda de Obsidian
+    if should_save or should_delete:
+        history.append("Investigador -> Bóveda: Delegando gestión física de archivos y borrado al Agente Bóveda de Obsidian.")
+        state["current_agent"] = "obsidian_agent"
     
-    llm_res = await llm_router.generate_response(
-        prompt=prompt_investigacion,
-        system_prompt="Eres un Agente Investigador Académico especializado en ciencia de datos, inteligencia artificial y energía. El año actual de referencia del sistema es 2026."
-    )
-    analisis_completo = llm_res.get("response", "Informe sintético de investigación sobre Sistemas Multiagentes.")
-    
-    if should_save:
-        note_content = (
-            f"# 📄 Informe de Investigación Académica: {filename_clean.replace('.md', '').replace('_', ' ').title()}\n\n"
-            f"- **Periodo de Cobertura:** 2022 - 2026 (Actualidad)\n"
-            f"- **Fecha de Registro:** Registrado por el Agente Investigador de Antigravity.\n\n"
-            f"## 📚 Artículos y Revisión de Literatura (2022-2026)\n\n"
-            f"{analisis_completo}\n"
-        )
-        ok = obsidian_manager.create_or_update_note(filename, note_content, append=False)
-        if ok:
-            history.append(f"Investigador -> Obsidian: Informe creado en Bóveda (/data/obsidian/{filename}).")
-            context_msg = f"✅ INFORME REGISTRADO EN OBSIDIAN (`/data/obsidian/{filename}`):\n\n{analisis_completo}"
-            if deleted_files_info:
-                context_msg = f"{deleted_files_info}\n\n{context_msg}"
-            state["research_context"] = context_msg
-        else:
-            state["research_context"] = "❌ Falló el guardado en Bóveda de Obsidian."
-    else:
-        history.append("Investigador: Análisis dinámico completado.")
-        context_msg = f"🔍 ANÁLISIS INVESTIGATIVO ACADÉMICO (2022-2026):\n\n{analisis_completo}"
-        if deleted_files_info:
-            context_msg = f"{deleted_files_info}\n\n{context_msg}"
-        state["research_context"] = context_msg
-        
     state["agent_history"] = history
     return state
 
 
 # -------------------------------------------------------------------
-# 3. AGENTE BÓVEDA DE OBSIDIAN (Memoria Periódica & Relaciones)
+# 3. AGENTE BÓVEDA DE OBSIDIAN (Memoria Periódica, Almacenamiento & Borrado)
 # -------------------------------------------------------------------
 async def obsidian_node(state: AgentState) -> AgentState:
-    """Agente de Obsidian: Extrae dinámicamente la memoria conversacional, gustos e intereses reales del usuario"""
+    """Agente de Obsidian PURO: Gestiona exclusivamente las operaciones en disco (crear, actualizar, borrar notas y memoria)"""
     history = state.get("agent_history", [])
-    history.append("Agente Bóveda Obsidian: Procesando extracción dinámica de memoria y preferencias")
+    history.append("Agente Bóveda Obsidian: Procesando operaciones físicas en la Bóveda de Obsidian")
     
     query = state["user_query"]
+    q_lower = query.lower()
     action_id = f"act-obsidian-{uuid.uuid4().hex[:6]}"
     
-    prompt_memoria = (
-        f"Analiza la siguiente consulta del usuario e identifica sus preferencias, gustos, temas de tesis e intereses expresados:\n"
-        f"Consulta: '{query}'\n\n"
-        f"Genera una síntesis en formato lista de viñetas resaltando:\n"
-        f"- Interacción o solicitud reciente\n"
-        f"- Intereses y tema de tesis específicos detectados en esta interacción\n"
-        f"- Relación con su perfil profesional en IA, ciencia de datos o sistemas de energía."
-    )
-    llm_res = await llm_router.generate_response(prompt=prompt_memoria, system_prompt="Eres el Agente de Memoria y Perfil de Obsidian.")
-    memoria_dinamica = llm_res.get("response", f"- Interacción: {query}")
+    should_delete = any(k in q_lower for k in ["elimina", "eliminar", "borra", "borrar", "limpia", "limpiar"])
+    research_context = state.get("research_context")
     
-    profile_path = "Memoria_Usuario/Preferencias_y_Gustos.md"
-    content = (
-        f"# 🧠 Memoria a Largo Plazo y Preferencias del Usuario\n\n"
-        f"## 📌 Actualización Reciente\n"
-        f"{memoria_dinamica}\n"
-    )
-    
-    pending: PendingAction = {
-        "action_id": action_id,
-        "agent_name": "Agente Bóveda Obsidian",
-        "tool_name": "write_obsidian_memory",
-        "description": "Actualizar registro de memoria periódica (gustos, relaciones y temas clave) en la Bóveda de Obsidian.",
-        "payload": {
-            "path": profile_path,
-            "content": content
-        },
-        "risk_level": "MEDIUM"
-    }
-    
-    state["pending_action"] = pending
-    state["user_approval_status"] = "PENDING"
-    state["obsidian_context"] = "Propuesta de actualización de memoria conversacional generada para Obsidian (Pendiente de aprobación HITL)."
-    state["current_agent"] = "obsidian_writer_node"
+    deleted_files_info = ""
+    if should_delete:
+        if "investigaciones" in q_lower or "folder" in q_lower or "carpeta" in q_lower:
+            deleted_count = obsidian_manager.delete_folder_contents("Investigaciones")
+            deleted_files_info = f"🗑️ Se eliminaron {deleted_count} archivo(s) previo(s) en la carpeta /data/obsidian/Investigaciones/."
+            history.append(f"Obsidian Manager: {deleted_files_info}")
+
+    # Si hay una investigación previa disponible para guardar en Obsidian
+    if research_context:
+        quoted_match = re.search(r'["\']([a-zA-Z0-9_\-\.]+)["\']', query)
+        keyword_match = re.search(r'(?:llamado|nombrado|titulado)\s+["\']?([a-zA-Z0-9_\-\.]+)["\']?', query, re.IGNORECASE)
+        
+        if quoted_match: raw_filename = quoted_match.group(1).strip()
+        elif keyword_match: raw_filename = keyword_match.group(1).strip()
+        else: raw_filename = ""
+        
+        if raw_filename and len(raw_filename) > 3 and not raw_filename.lower().startswith("llamado"):
+            if not raw_filename.endswith(".md"): raw_filename += ".md"
+            filename_clean = raw_filename
+        else:
+            filename_clean = "Sistemas_multi_agente.md"
+            
+        filename = f"Investigaciones/{filename_clean}"
+        note_content = (
+            f"# 📄 Informe de Investigación Académica: {filename_clean.replace('.md', '').replace('_', ' ').title()}\n\n"
+            f"- **Origen:** Procesado por Agente Investigador (NotebookLM Engine)\n"
+            f"- **Periodo:** 2022 - 2026\n\n"
+            f"## 📚 Resultados del Análisis Analítico Grounded\n\n"
+            f"{research_context}\n"
+        )
+        
+        ok = obsidian_manager.create_or_update_note(filename, note_content, append=False)
+        if ok:
+            history.append(f"Obsidian Manager: Nota creada en /data/obsidian/{filename}.")
+            msg = f"✅ INFORME REGISTRADO EN OBSIDIAN (`/data/obsidian/{filename}`):\n\n{research_context}"
+            if deleted_files_info: msg = f"{deleted_files_info}\n\n{msg}"
+            state["obsidian_context"] = msg
+        else:
+            state["obsidian_context"] = "❌ Error escribiendo nota de investigación en Obsidian."
+    else:
+        # Gestión de memoria de perfil de usuario
+        prompt_memoria = (
+            f"Analiza la consulta del usuario e identifica sus preferencias, temas de tesis e intereses:\n'{query}'\n\n"
+            f"Genera una síntesis en formato lista de viñetas con sus intereses actuales."
+        )
+        llm_res = await llm_router.generate_response(prompt=prompt_memoria, system_prompt="Eres el Agente de Memoria de Obsidian.")
+        memoria_dinamica = llm_res.get("response", f"- Interacción: {query}")
+        
+        profile_path = "Memoria_Usuario/Preferencias_y_Gustos.md"
+        content = f"# 🧠 Memoria a Largo Plazo y Preferencias del Usuario\n\n## 📌 Actualización Reciente\n{memoria_dinamica}\n"
+        
+        pending: PendingAction = {
+            "action_id": action_id,
+            "agent_name": "Agente Bóveda Obsidian",
+            "tool_name": "write_obsidian_memory",
+            "description": "Actualizar registro de memoria periódica (gustos y temas clave) en Obsidian.",
+            "payload": {
+                "path": profile_path,
+                "content": content
+            },
+            "risk_level": "MEDIUM"
+        }
+        state["pending_action"] = pending
+        state["user_approval_status"] = "PENDING"
+        state["obsidian_context"] = "Propuesta de memoria generada para Obsidian (Pendiente de aprobación HITL)."
+        state["current_agent"] = "obsidian_writer_node"
+        
     state["agent_history"] = history
     return state
 
