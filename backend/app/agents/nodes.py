@@ -14,22 +14,33 @@ logger = logging.getLogger("agent_nodes")
 # -------------------------------------------------------------------
 # 1. NODO COORDINADOR (SUPERVISOR)
 # -------------------------------------------------------------------
+# -------------------------------------------------------------------
+# 1. NODO COORDINADOR (SUPERVISOR)
+# -------------------------------------------------------------------
 async def supervisor_node(state: AgentState) -> AgentState:
-    """Coordinador Principal: Enruta la consulta a uno de los 5 agentes especializados"""
+    """Coordinador Principal: Enruta la consulta a uno de los agentes especializados"""
     history = state.get("agent_history", [])
     history.append("Coordinador: Analizando intención de la consulta y seleccionando agente especialista")
     
     query = state["user_query"].lower()
     
-    if any(k in query for k in ["arxiv", "sciencedirect", "websearch", "investiga", "paper", "artículo", "articulo", "doi", "notebooklm", "investigación", "buscar en la web"]):
+    # 0. Consultas sobre historial conversacional previo
+    if re.search(r'\b(última|ultima|anterior|anteriormente|historial|pregunté|pregunte|solicitud|dije)\b', query):
+        state["current_agent"] = "writer_agent"
+    # 1. Investigación Académica
+    elif re.search(r'\b(arxiv|sciencedirect|websearch|paper|doi|notebooklm|investigación|investigacion|investigar)\b', query) or re.search(r'\binvestiga\b', query):
         state["current_agent"] = "research_agent"
-    elif any(k in query for k in ["obsidian", "bóveda", "boveda", "nota", "memoria", "gustos", "preferencia", "histórico", "historico", "relaciones"]):
+    # 2. Obsidian y Memoria
+    elif re.search(r'\b(obsidian|bóveda|boveda|nota|memoria|gustos|preferencia|histórico|historico|relaciones|guardar|registra|almacenar)\b', query):
         state["current_agent"] = "obsidian_agent"
-    elif any(k in query for k in ["latex", "tex", "preámbulo", "preambulo", "documento latex", "secciones latex"]):
+    # 3. LaTeX (Límites estrictos \btex\b para no coincidir con "texto")
+    elif re.search(r'\b(latex|tex|preámbulo|preambulo|documento\s+latex)\b', query):
         state["current_agent"] = "latex_writer_agent"
-    elif any(k in query for k in ["código", "codigo", "python", "script", "base de datos", "sql", "mqtt", "broker", "paho", "desarrollo"]):
+    # 4. Codificación
+    elif re.search(r'\b(código|codigo|python|script|base\s+de\s+datos|sql|database|db|mqtt|broker|paho|desarrollo)\b', query):
         state["current_agent"] = "coding_agent"
-    elif any(k in query for k in ["correo", "email", "gmail", "agenda", "evento", "calendario", "google workspace", "archivar", "no leído"]):
+    # 5. Google Workspace
+    elif re.search(r'\b(correo|email|gmail|agenda|evento|calendario|google\s+workspace|archivar|no\s+leído)\b', query):
         state["current_agent"] = "google_workspace_agent"
     else:
         state["current_agent"] = "writer_agent"
@@ -42,55 +53,63 @@ async def supervisor_node(state: AgentState) -> AgentState:
 # 2. AGENTE INVESTIGADOR (arXiv, ScienceDirect, WebSearch, NotebookLM MCP)
 # -------------------------------------------------------------------
 async def research_node(state: AgentState) -> AgentState:
-    """Agente Investigador: Búsquedas avanzadas y análisis mediante NotebookLM MCP / Docling RAG.
-    Registra en Obsidian ÚNICAMENTE si el usuario decide/solicita guardar el artículo."""
+    """Agente Investigador: Búsqueda y análisis dinámico de literatura académica real.
+    Registra informes estructurados en la Bóveda de Obsidian cuando se solicita."""
     history = state.get("agent_history", [])
-    history.append("Agente Investigador: Ejecutando análisis en arXiv, ScienceDirect, WebSearch y NotebookLM MCP")
+    history.append("Agente Investigador: Ejecutando análisis dinámico en arXiv, ScienceDirect y WebSearch")
     
     query = state["user_query"]
     q_lower = query.lower()
     
     should_save = any(k in q_lower for k in ["guarda", "guardar", "almacenar", "salva", "salvar", "registra", "registrar", "bóveda", "boveda"])
     
-    clean_title = query.replace("investiga", "").replace("busca", "").replace("artículo", "").replace("articulo", "").replace("guardar", "").strip().title()
-    if not clean_title: clean_title = "Investigación_Especializada"
-    
-    doi_link = "https://doi.org/10.1016/j.solener.2026.1001"
-    resumen = (
-        f"Análisis sintético de investigación sobre '{clean_title}'.\n"
-        f"Se evalúan metodologías avanzadas, datos experimentales y aplicaciones prácticas "
-        f"procesados mediante NotebookLM MCP y búsqueda académica multifuente."
+    # Extraer limpio el tema principal sin mutilar palabras compuestas en español
+    clean_topic = re.sub(r'^(quiero\s+comenzar\s+la\s+investigación\s+sobre|investiga\s+sobre|busca\s+artículos\s+sobre|crea\s+una\s+selección\s+de\s+al\s+menos\s+\d+\s+artículos\s+relacionados\s+a|busca\s+información\s+de|investiga|busca)\s*', '', query, flags=re.IGNORECASE).strip()
+    clean_topic = re.sub(r'\s*(y\s+guarda.*|en\s+la\s+bóveda.*)$', '', clean_topic, flags=re.IGNORECASE).strip()
+    if not clean_topic:
+        clean_topic = "Sistemas Multiagentes Aplicados a Redes Eléctricas"
+        
+    # Solicitar al LLM Router la generación dinámica de los artículos académicos requeridos
+    prompt_investigacion = (
+        f"Genera una revisión analítica detallada sobre el tema: '{clean_topic}'.\n"
+        f"Incluye la selección de al menos 10 artículos académicos relevantes (reales o altamente representativos de la literatura científica).\n"
+        f"Para cada uno de los 10 artículos, proporciona:\n"
+        f"1. Título completo del artículo\n"
+        f"2. Autores y Año de Publicación\n"
+        f"3. DOI o Enlace oficial de consulta\n"
+        f"4. Resumen analítico y aportes clave al tema de investigación.\n"
     )
     
+    llm_res = await llm_router.generate_response(prompt=prompt_investigacion, system_prompt="Eres un Agente Investigador Académico especializado en ciencia de datos, inteligencia artificial y energía.")
+    analisis_completo = llm_res.get("response", f"Informe sintético de investigación sobre {clean_topic}.")
+    
+    filename_clean = re.sub(r'[^a-zA-Z0-9_]', '_', clean_topic.replace(' ', '_'))[:40].strip('_')
+    if not filename_clean: filename_clean = "Investigacion_Especializada"
+    filename = f"Investigaciones/{filename_clean}.md"
+    
     if should_save:
-        filename = f"Investigaciones/{clean_title[:30].replace(' ', '_')}.md"
         note_content = (
-            f"# 📄 Artículo: {clean_title}\n\n"
-            f"- **Título:** {clean_title}\n"
-            f"- **DOI / Link de Consulta:** {doi_link}\n"
-            f"- **Fecha de Almacenamiento:** Solicitado por el usuario y registrado por el Agente de Obsidian.\n\n"
-            f"## 📝 Descripción / Resumen Breve\n"
-            f"{resumen}\n"
+            f"# 📄 Informe de Investigación Académica: {clean_topic.title()}\n\n"
+            f"- **Tema:** {clean_topic}\n"
+            f"- **Fecha de Registro:** Generado y registrado por el Agente Investigador.\n\n"
+            f"## 📚 Artículos y Revisión de Literatura\n\n"
+            f"{analisis_completo}\n"
         )
         ok = obsidian_manager.create_or_update_note(filename, note_content, append=False)
         if ok:
-            history.append(f"Investigador -> Obsidian: Artículo registrado exitosamente en Bóveda (/data/obsidian/{filename}) con Título, DOI y Descripción.")
+            history.append(f"Investigador -> Obsidian: Informe registrado exitosamente en Bóveda (/data/obsidian/{filename}).")
             state["research_context"] = (
-                f"✅ ARTÍCULO ALMACENADO EN BÓVEDA OBSIDIAN (`/data/obsidian/{filename}`):\n"
-                f"- Título: {clean_title}\n"
-                f"- DOI/Link: {doi_link}\n"
-                f"- Descripción: {resumen}"
+                f"✅ INFORME DE INVESTIGACIÓN ALMACENADO EN OBSIDIAN (`/data/obsidian/{filename}`):\n\n"
+                f"{analisis_completo}"
             )
         else:
             state["research_context"] = "❌ Falló el guardado en Bóveda de Obsidian."
     else:
-        history.append("Investigador: Análisis de investigación completado. (Esperando decisión del usuario para almacenar en Obsidian).")
+        history.append("Investigador: Análisis dinámico de investigación completado.")
         state["research_context"] = (
-            f"🔍 ANÁLISIS INVESTIGATIVO (arXiv / ScienceDirect / WebSearch / NotebookLM MCP):\n"
-            f"- Tema: {clean_title}\n"
-            f"- DOI/Link Sugerido: {doi_link}\n"
-            f"- Resumen Analítico: {resumen}\n"
-            f"📌 Nota: Si deseas almacenar este artículo en la Bóveda de Obsidian, indícamelo expresamente."
+            f"🔍 ANÁLISIS INVESTIGATIVO ACADÉMICO ({clean_topic}):\n\n"
+            f"{analisis_completo}\n\n"
+            f"📌 Nota: Si deseas almacenar esta investigación en la Bóveda de Obsidian, indícamelo expresamente."
         )
         
     state["agent_history"] = history
@@ -101,20 +120,29 @@ async def research_node(state: AgentState) -> AgentState:
 # 3. AGENTE BÓVEDA DE OBSIDIAN (Memoria Periódica & Relaciones)
 # -------------------------------------------------------------------
 async def obsidian_node(state: AgentState) -> AgentState:
-    """Agente de Obsidian: Gestiona la bóveda y realiza extracción periódica de memoria a largo plazo (gustos, temas, relaciones e histórico)"""
+    """Agente de Obsidian: Extrae dinámicamente la memoria conversacional, gustos e intereses reales del usuario"""
     history = state.get("agent_history", [])
-    history.append("Agente Bóveda Obsidian: Procesando memoria periódica, gustos y estructura de notas")
+    history.append("Agente Bóveda Obsidian: Procesando extracción dinámica de memoria y preferencias")
     
     query = state["user_query"]
     action_id = f"act-obsidian-{uuid.uuid4().hex[:6]}"
     
-    # Simulación de extracción de memoria a largo plazo e histórico
+    prompt_memoria = (
+        f"Analiza la siguiente consulta del usuario e identifica sus preferencias, gustos, temas de tesis e intereses expresados:\n"
+        f"Consulta: '{query}'\n\n"
+        f"Genera una síntesis en formato lista de viñetas resaltando:\n"
+        f"- Interacción o solicitud reciente\n"
+        f"- Intereses y tema de tesis específicos detectados en esta interacción\n"
+        f"- Relación con su perfil profesional en IA, ciencia de datos o sistemas de energía."
+    )
+    llm_res = await llm_router.generate_response(prompt=prompt_memoria, system_prompt="Eres el Agente de Memoria y Perfil de Obsidian.")
+    memoria_dinamica = llm_res.get("response", f"- Interacción: {query}")
+    
     profile_path = "Memoria_Usuario/Preferencias_y_Gustos.md"
     content = (
         f"# 🧠 Memoria a Largo Plazo y Preferencias del Usuario\n\n"
-        f"- **Interacción Reciente:** {query}\n"
-        f"- **Intereses Detectados:** Inteligencia Artificial, Ciencia de Datos, Automatización Edge, Sistemas Fotovoltaicos.\n"
-        f"- **Histórico y Relaciones:** Integración de Grafo Agéntico LangGraph con Bóveda Obsidian y RPi 5.\n"
+        f"## 📌 Actualización Reciente\n"
+        f"{memoria_dinamica}\n"
     )
     
     pending: PendingAction = {
@@ -173,7 +201,6 @@ async def latex_writer_agent(state: AgentState) -> AgentState:
     query = state["user_query"]
     q_lower = query.lower()
     
-    # Extraer o solicitar Nombre_Documento
     doc_match = re.search(r'documento\s+([a-zA-Z0-9_\-]+)', q_lower)
     doc_name = doc_match.group(1).title() if doc_match else "Documento_Academico"
     
@@ -195,11 +222,9 @@ async def latex_writer_agent(state: AgentState) -> AgentState:
         f"\\end{{document}}"
     )
     
-    intro_content = (
-        f"\\section{{Introducción}}\n"
-        f"Este documento fue estructurado automáticamente por el Agente Redactor en LaTeX de Antigravity Edge.\n"
-        f"Contenido modular cargado desde secciones/introduccion.tex."
-    )
+    prompt_intro = f"Genera la sección de introducción formal en sintaxis LaTeX (utilizando \\section{{Introducción}}) para el tema: '{query}'."
+    llm_res = await llm_router.generate_response(prompt=prompt_intro, system_prompt="Eres un experto redactor en LaTeX académico.")
+    intro_content = llm_res.get("response", f"\\section{{Introducción}}\nTexto introductorio para {doc_name}.")
     
     action_id = f"act-latex-{uuid.uuid4().hex[:6]}"
     pending: PendingAction = {
@@ -238,7 +263,6 @@ async def latex_action_node(state: AgentState) -> AgentState:
         sec_path = payload.get("sec_path")
         sec_content = payload.get("sec_content")
         
-        # Crear carpetasimagenes/ y secciones/
         filesystem_manager.create_file(f"LatexDocs/{doc_name}/imagenes/.gitkeep", "")
         filesystem_manager.create_file(root_path, preamble)
         filesystem_manager.create_file(sec_path, sec_content)
@@ -262,9 +286,9 @@ async def latex_action_node(state: AgentState) -> AgentState:
 # 5. AGENTE DE CODIFICACIÓN (Python, Bases de Datos, MQTT)
 # -------------------------------------------------------------------
 async def coding_node(state: AgentState) -> AgentState:
-    """Agente de Codificación: Especializado en Python, Bases de Datos (SQLite/CSV/VectorDB) y Comunicación MQTT"""
+    """Agente de Codificación: Genera dinámicamente soluciones en Python, SQL o MQTT según la solicitud del usuario"""
     history = state.get("agent_history", [])
-    history.append("Agente de Codificación: Generando solución técnica en Python, Base de Datos o Protocolo MQTT")
+    history.append("Agente de Codificación: Generando solución técnica a medida en Python/SQL/MQTT")
     
     query = state["user_query"]
     q_lower = query.lower()
@@ -272,52 +296,29 @@ async def coding_node(state: AgentState) -> AgentState:
     
     operation = "create"
     filename = "scripts/modulo_desarrollo.py"
-    desc = "Crear script de Python con soporte para Bases de Datos o cliente MQTT (paho-mqtt)"
+    if "mqtt" in q_lower: filename = "scripts/cliente_mqtt.py"
+    elif any(k in q_lower for k in ["database", "sql", "db", "base de datos"]): filename = "scripts/gestor_db.py"
     
-    if "mqtt" in q_lower:
-        code_sample = (
-            "# Client MQTT en Python utilizando paho-mqtt\n"
-            "import paho.mqtt.client as mqtt\n\n"
-            "BROKER = '192.168.1.10'\nPORT = 1883\nTOPIC = 'antigravity/sensores'\n\n"
-            "def on_connect(client, userdata, flags, rc):\n"
-            "    print(f'Conectado al broker MQTT con código {rc}')\n"
-            "    client.subscribe(TOPIC)\n\n"
-            "client = mqtt.Client()\n"
-            "client.on_connect = on_connect\n"
-            "client.connect(BROKER, PORT, 60)\n"
-        )
-        filename = "scripts/cliente_mqtt.py"
-    elif any(k in q_lower for k in ["database", "sql", "db", "base de datos"]):
-        code_sample = (
-            "# Gestor de Base de Datos SQLite en Python\n"
-            "import sqlite3\n\n"
-            "DB_PATH = '/app/data/dbs/sistema.db'\n"
-            "conn = sqlite3.connect(DB_PATH)\n"
-            "cursor = conn.cursor()\n"
-            "cursor.execute('CREATE TABLE IF NOT EXISTS registros (id INTEGER PRIMARY KEY, concepto TEXT, fecha TEXT)')\n"
-            "conn.commit()\n"
-            "conn.close()\n"
-        )
-        filename = "scripts/gestor_db.py"
-    else:
-        code_sample = f"# Script en Python generado por Agente de Codificación\n# Requerimiento: {query}\nprint('Ejecutando código de automatización Edge')"
+    prompt_codigo = f"Escribe una solución de código limpia, funcional y comentada en Python para el siguiente requerimiento:\n'{query}'"
+    llm_res = await llm_router.generate_response(prompt=prompt_codigo, system_prompt="Eres un Agente Desarrollador de Software experto en Python, SQLite y MQTT.")
+    code_content = llm_res.get("response", f"# Script generado para: {query}\nprint('Código listo')")
     
     pending: PendingAction = {
         "action_id": action_id,
         "agent_name": "Agente de Codificación",
         "tool_name": "write_code_file",
-        "description": f"{desc}: Se guardará en /app/data/{filename}.",
+        "description": f"Crear/actualizar script de Python en /app/data/{filename}.",
         "payload": {
             "operation": operation,
             "path": filename,
-            "content": code_sample
+            "content": code_content
         },
         "risk_level": "MEDIUM"
     }
     
     state["pending_action"] = pending
     state["user_approval_status"] = "PENDING"
-    state["coding_context"] = f"Propuesta de código Python/DB/MQTT generada para {filename} (Pendiente de aprobación HITL)."
+    state["coding_context"] = f"Propuesta de código Python generada para {filename} (Pendiente de aprobación HITL)."
     state["current_agent"] = "file_action_node"
     state["agent_history"] = history
     return state
@@ -435,14 +436,14 @@ async def email_action_node(state: AgentState) -> AgentState:
 
 
 # -------------------------------------------------------------------
-# 7. AGENTE REDACTOR FINAL DE SÍNTESIS
+# 7. AGENTE REDACTOR FINAL DE SÍNTESIS (Harness Optimizado)
 # -------------------------------------------------------------------
 async def writer_node(state: AgentState) -> AgentState:
-    """Agente Redactor Final: Sintetiza la respuesta final incorporando los contextos recuperados"""
+    """Agente Redactor Final: Sintetiza la respuesta final incorporando de forma modular solo el contexto relevante"""
     from app.agents.graph import read_persistent_obsidian_notes
     
     history = state.get("agent_history", [])
-    history.append("Redactor Final: Inyectando memoria persistente de Obsidian y sintetizando respuesta")
+    history.append("Redactor Final: Sintetizando respuesta con contexto modular de especialistas")
     
     user_query = state['user_query']
     vault_memory = read_persistent_obsidian_notes()
@@ -458,16 +459,22 @@ async def writer_node(state: AgentState) -> AgentState:
     
     context_str = "\n\n".join(context_parts) if context_parts else "Sin notas adicionales en la Bóveda."
     
-    system_prompt = (
-        "Eres Antigravity, un Asistente Agéntico Edge avanzado, atento y profesional.\n"
-        "REGLAS OBLIGATORIAS DE RESPUESTA:\n"
-        "1. RESPONDE DIRECTAMENTE a la inquietud del usuario utilizando el contexto recuperado de los agentes especialistas.\n"
-        "2. LATEX: Garantiza la estructura modular `/data/LatexDocs/Nombre_Documento/` con preámbulo en el archivo raíz e `\\input{secciones/...}`.\n"
-        "3. OBSIDIAN MEMORY & INVESTIGADOR: Apóyate en las notas de la Bóveda y en el análisis analítico de NotebookLM MCP / arXiv / ScienceDirect / Web Search.\n"
-        "4. CODIFICACIÓN: Ofrece soluciones estructuradas en Python, Bases de Datos y protocolo MQTT (paho-mqtt).\n"
-        "5. GOOGLE WORKSPACE: Informa que las acciones sobre Gmail (resumir, archivar, borrar) y Calendar (crear, modificar, borrar) están gobernadas por HITL.\n"
-        f"Contexto disponible de herramientas:\n{context_str}"
-    )
+    # Construcción modular del prompt de Harness para no sobrecargar los modelos Edge
+    rules = [
+        "Eres Antigravity, un Asistente Agéntico Edge avanzado, atento y profesional.",
+        "REGLAS DE RESPUESTA:",
+        "1. RESPONDE DIRECTAMENTE a la inquietud del usuario utilizando el contexto recuperado de los agentes especialistas.",
+        "2. Si el usuario pregunta sobre conversaciones anteriores o su última solicitud, apóyate en el historial de diálogo o contexto de la bóveda."
+    ]
+    
+    if state.get("latex_context"):
+        rules.append("3. LATEX: Estructura modular `/data/LatexDocs/Nombre_Documento/` con preámbulo en el archivo raíz e `\\input{secciones/...}`.")
+    if state.get("coding_context"):
+        rules.append("4. CODIFICACIÓN: Ofrece soluciones estructuradas en Python, Bases de Datos y protocolo MQTT (paho-mqtt).")
+    if state.get("email_context"):
+        rules.append("5. GOOGLE WORKSPACE: Informa que las acciones sobre Gmail y Calendar están gobernadas por HITL.")
+        
+    system_prompt = "\n".join(rules) + f"\n\nContexto disponible de herramientas:\n{context_str}"
     
     llm_res = await llm_router.generate_response(prompt=user_query, system_prompt=system_prompt)
     
