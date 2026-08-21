@@ -23,6 +23,8 @@ class AgentState(TypedDict):
     latex_context: Optional[str]
     coding_context: Optional[str]
     email_context: Optional[str]
+    finance_context: Optional[str]
+    core_memory_context: Optional[str]
     
     # Campos de Harness Engineering & Human-In-The-Loop (HITL)
     pending_action: Optional[PendingAction]  # Acción propuesta que requiere validación

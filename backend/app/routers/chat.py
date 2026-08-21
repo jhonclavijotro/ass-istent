@@ -64,6 +64,7 @@ async def chat_endpoint(request: ChatRequest):
         "latex_context": None,
         "coding_context": None,
         "email_context": None,
+        "finance_context": None,
         "pending_action": None,
         "user_approval_status": None,
         "user_approval_feedback": None,

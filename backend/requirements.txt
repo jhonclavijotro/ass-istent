@@ -11,3 +11,7 @@ qdrant-client==1.9.1
 watchdog==4.0.1
 pymupdf==1.24.5
 python-dotenv==1.0.1
+aiosqlite==0.20.0
+mcp>=1.0.0
+pypdf>=4.0.0
+

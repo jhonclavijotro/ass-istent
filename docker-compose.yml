@@ -17,6 +17,7 @@ services:
     volumes:
       # Mounts de carpetas físicas automáticas en el proyecto
       - ./data/pdfs:/app/data/pdfs
+      - ./data/downloads:/app/data/downloads
       - ./data/obsidian:/app/data/obsidian
       - ./data/finanzas:/app/data/finanzas
       - ./dbs:/app/dbs
@@ -31,9 +32,41 @@ services:
           cpus: '0.50'
           memory: 512M
     networks:
-      - asistente-net
+      asistente-net:
+        ipv4_address: 172.22.0.2
 
   # =========================================================================
+  # MCP SERVER: NotebookLM (FastMCP + SSE)
+  # =========================================================================
+  mcp-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: asistente-mcp-server
+    command: ["uvicorn", "app.tools.mcp_server_notebooklm:app", "--host", "0.0.0.0", "--port", "8080"]
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./data/pdfs:/app/data/pdfs
+      - ./data/downloads:/app/data/downloads
+      - ./dbs:/app/dbs
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    networks:
+      asistente-net:
+        ipv4_address: 172.22.0.5
+
+  # =========================================================================
+
   # VECTOR DB: Qdrant Engine (Rust Native ARM64)
   # =========================================================================
   qdrant:
@@ -54,7 +87,8 @@ services:
           cpus: '0.25'
           memory: 256M
     networks:
-      - asistente-net
+      asistente-net:
+        ipv4_address: 172.22.0.3
 
   # =========================================================================
   # FRONTEND: Nginx Web UI (Alpine ARM64)
@@ -78,8 +112,12 @@ services:
           cpus: '0.10'
           memory: 64M
     networks:
-      - asistente-net
+      asistente-net:
+        ipv4_address: 172.22.0.4
 
 networks:
   asistente-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16

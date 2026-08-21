@@ -21,10 +21,11 @@ def get_system_config_path() -> str:
 
 class ResilientLLMRouter:
     def __init__(self):
+        default_rpi = "http://172.22.0.1:11434" if os.path.exists("/app") else "http://localhost:11434"
         self.ollama_pc_url: str = os.getenv("OLLAMA_PC_URL", "http://192.168.1.9:11434")
         self.ollama_pc_model: str = os.getenv("OLLAMA_PC_MODEL", "qwen3.5:4b")
-        self.ollama_rpi_url: str = os.getenv("OLLAMA_RPI_URL", "http://localhost:11434")
-        self.ollama_rpi_model: str = os.getenv("OLLAMA_RPI_MODEL", "qwen2.5:1.5b")
+        self.ollama_rpi_url: str = os.getenv("OLLAMA_RPI_URL", default_rpi)
+        self.ollama_rpi_model: str = os.getenv("OLLAMA_RPI_MODEL", "qwen3.5:4b")
         self.selected_provider: str = "auto"
         self._load_system_config()
 
@@ -73,7 +74,7 @@ class ResilientLLMRouter:
     async def fetch_pc_ollama_models(self) -> List[str]:
         url = f"{self.ollama_pc_url}/api/tags"
         try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
+            async with httpx.AsyncClient(timeout=4.0) as client:
                 res = await client.get(url)
                 if res.status_code == 200:
                     data = res.json()
@@ -88,14 +89,14 @@ class ResilientLLMRouter:
         url = f"{self.ollama_pc_url}/api/version"
         start = time.time()
         try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
+            async with httpx.AsyncClient(timeout=4.0) as client:
                 res = await client.get(url)
                 elapsed = round((time.time() - start) * 1000, 2)
                 if res.status_code == 200:
                     return True, elapsed, f"OK: Conectado en {self.ollama_pc_url} ({elapsed} ms)"
                 return False, elapsed, f"HTTP Status {res.status_code}"
         except httpx.TimeoutException:
-            return False, 3000.0, f"Timeout al conectar con {self.ollama_pc_url}."
+            return False, 4000.0, f"Timeout al conectar con {self.ollama_pc_url}."
         except Exception as e:
             return False, 0.0, f"Inalcanzable: {str(e)}"
 
@@ -103,7 +104,7 @@ class ResilientLLMRouter:
         url = f"{self.ollama_rpi_url}/api/version"
         start = time.time()
         try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
+            async with httpx.AsyncClient(timeout=4.0) as client:
                 res = await client.get(url)
                 elapsed = round((time.time() - start) * 1000, 2)
                 if res.status_code == 200:
@@ -156,28 +157,26 @@ class ResilientLLMRouter:
     def _generate_fallback_synthesis(self, prompt: str, system_prompt: str = "") -> str:
         p_lower = prompt.lower()
         
-        # Solo activar la respuesta explícita de perfil si el usuario PREGUNTA ESPECÍFICAMENTE sobre su identidad
-        if any(k in p_lower for k in ["quién soy", "quien soy", "recuerdas mi nombre", "cuál es mi perfil", "quién es el usuario", "recuerdas quién soy"]):
-            return (
-                "¡Consultando tu Bóveda de Memoria en disco!\n\n"
-                "Tengo registrado tu perfil profesional:\n\n"
-                "- **Nombre:** Jhonathan Clavijo\n"
-                "- **Profesión:** Ingeniero Electricista (Universidad Autónoma de Occidente, Cali, Colombia)\n"
-                "- **Estudios:** Tesista de la Maestría en Inteligencia Artificial y Ciencia de Datos\n"
-                "- **Cargo:** Ingeniero de Operación y Mantenimiento en la Granja Solar Palmaseca (Palmira) para ST Ingenieros Constructores LTDA.\n\n"
-                "Toda esta información está guardada permanentemente en la Bóveda en `/data/obsidian/Sintesis_Interacciones/Perfil_Usuario.md`."
-            )
-        
-        # Sintetizar según el tipo de consulta sin repetir el saludo
+        # Consultar notas dinámicas en la bóveda si existen
+        obs_dir = "/app/data/obsidian" if os.path.exists("/app/data/obsidian") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "obsidian"))
+        profile_path = os.path.join(obs_dir, "Memoria_Usuario", "Preferencias_y_Gustos.md")
+        if os.path.exists(profile_path):
+            try:
+                with open(profile_path, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                    if any(k in p_lower for k in ["quién soy", "quien soy", "recuerdas mi nombre", "cuál es mi perfil", "quién es el usuario", "recuerdas quién soy"]):
+                        return f"### 🧠 Memoria de Bóveda (/data/obsidian/):\n\n{content}"
+            except Exception:
+                pass
+
         if any(k in p_lower for k in ["artículo", "articulo", "paper", "doi", "investiga", "resumen", "agentes", "multiagentes"]):
             return (
-                "### 🔍 Investigación Agéntica: Agentes y Sistemas Multiagentes\n\n"
-                "Un **Agente de IA** es una entidad autónoma capaz de percibir su entorno, tomar decisiones y ejecutar acciones utilizando modelos de lenguaje (LLM) y herramientas especializadas.\n\n"
-                "Un **Sistema Multiagente (MAS)** coordina múltiples agentes con roles especializados (ej. Coordinador, Investigador, Desarrollador, Redactor) que colaboran resolviendo problemas complejos de manera distribuida.\n\n"
-                "📌 *La información ha sido sintetizada y estructurada para su consulta y registro en la Bóveda de Obsidian.*"
+                "### 🔍 Síntesis Agéntica:\n\n"
+                "Un **Sistema Multiagente (MAS)** coordina múltiples agentes con roles especializados (ej. Coordinador, Investigador, Desarrollador, Finanzas, Redactor) "
+                "que colaboran resolviendo problemas complejos de manera distribuida y con supervisión de seguridad HITL."
             )
 
-        return f"Entendido. He procesado tu solicitud: '{prompt}'. Quedo atento a tus indicaciones para continuar."
+        return f"Solicitud procesada: '{prompt}'. Si una acción requiere confirmación (HITL), por favor utiliza el botón de aprobación correspondiente."
 
     async def generate_response(self, prompt: str, system_prompt: str = "") -> Dict[str, Any]:
         """Ejecuta inferencia reportando de forma 100% transparente el Tier activo y cualquier failover ocurrido"""
@@ -194,12 +193,13 @@ class ResilientLLMRouter:
                 "system": system_prompt,
                 "stream": False,
                 "options": {
-                    "num_predict": 512,
-                    "temperature": 0.7
+                    "num_ctx": 2048,
+                    "num_predict": 384,
+                    "temperature": 0.6
                 }
             }
             try:
-                async with httpx.AsyncClient(timeout=45.0) as client:
+                async with httpx.AsyncClient(timeout=60.0) as client:
                     res = await client.post(url, json=payload)
                     if res.status_code == 200:
                         data = res.json()
@@ -252,10 +252,14 @@ class ResilientLLMRouter:
                     "prompt": prompt,
                     "system": system_prompt,
                     "stream": False,
-                    "options": {"num_predict": 512}
+                    "options": {
+                        "num_ctx": 1536,
+                        "num_predict": 256,
+                        "temperature": 0.6
+                    }
                 }
                 try:
-                    async with httpx.AsyncClient(timeout=15.0) as client:
+                    async with httpx.AsyncClient(timeout=45.0) as client:
                         res = await client.post(url, json=payload)
                         if res.status_code == 200:
                             data = res.json()

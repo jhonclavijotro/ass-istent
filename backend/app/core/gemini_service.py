@@ -63,7 +63,7 @@ class GeminiService:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
             try:
-                os.chmod(path, 0o666)
+                os.chmod(path, 0o600)
             except Exception:
                 pass
             logger.info(f"Credenciales de Gemini guardadas exitosamente en '{path}'.")

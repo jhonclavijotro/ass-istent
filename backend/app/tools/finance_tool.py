@@ -266,7 +266,7 @@ class StructuredFinanceManager:
             return {"status": "error", "message": str(e)}
 
     # Compatibilidad con métodos anteriores
-    def list_financial_files() -> List[str]:
+    def list_financial_files(self) -> List[str]:
         return ["finanzas_db.csv"]
 
     def add_financial_record_extended(self, filename="finanzas_db.csv", fecha="14/08/2026", concepto="Pago", monto=0.0, tipo="ingreso", entidad="BDV", categoria="trabajo") -> bool:

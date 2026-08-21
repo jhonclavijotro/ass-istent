@@ -1,11 +1,13 @@
 import os
 import glob
 import logging
+import sqlite3
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from app.agents.state import AgentState
 from app.agents.nodes import (
     supervisor_node,
+    finance_node,
     research_node,
     obsidian_node,
     obsidian_writer_node,
@@ -20,6 +22,7 @@ from app.agents.nodes import (
 
 logger = logging.getLogger("agent_graph")
 
+# Checkpointer asíncrono seguro para LangGraph
 memory_checkpointer = MemorySaver()
 
 def read_persistent_obsidian_notes() -> str:
@@ -59,6 +62,8 @@ def read_persistent_obsidian_notes() -> str:
 def router_conditional(state: AgentState) -> str:
     """Función de enrutamiento condicional basada en la decisión del Coordinador"""
     agent = state.get("current_agent", "writer_agent")
+    if agent in ["finance_node", "finance_agent"]:
+        return "finance_agent"
     if agent in ["research_node", "research_agent"]:
         return "research_agent"
     if agent in ["obsidian_node", "obsidian_agent"]:
@@ -72,11 +77,12 @@ def router_conditional(state: AgentState) -> str:
     return "writer_agent"
 
 def build_agent_graph():
-    """Construye e inicializa el grafo agéntico de LangGraph con Checkpointer e Interrupciones HITL"""
+    """Construye e inicializa el grafo agéntico de LangGraph con SqliteSaver e Interrupciones HITL"""
     workflow = StateGraph(AgentState)
     
-    # Agregar Nodos de los 6 Agentes
+    # Agregar Nodos de los Agentes Especialistas
     workflow.add_node("supervisor", supervisor_node)
+    workflow.add_node("finance_agent", finance_node)
     workflow.add_node("research_agent", research_node)
     workflow.add_node("obsidian_agent", obsidian_node)
     workflow.add_node("obsidian_writer_node", obsidian_writer_node)
@@ -96,6 +102,7 @@ def build_agent_graph():
         "supervisor",
         router_conditional,
         {
+            "finance_agent": "finance_agent",
             "research_agent": "research_agent",
             "obsidian_agent": "obsidian_agent",
             "latex_writer_agent": "latex_writer_agent",
@@ -106,6 +113,7 @@ def build_agent_graph():
     )
     
     # Transiciones hacia los nodos HITL o directamente al redactor final
+    workflow.add_edge("finance_agent", "writer_agent")
     workflow.add_edge("research_agent", "writer_agent")
     
     workflow.add_edge("obsidian_agent", "obsidian_writer_node")
@@ -123,7 +131,7 @@ def build_agent_graph():
     # El Redactor finaliza el grafo
     workflow.add_edge("writer_agent", END)
     
-    # Compilar el grafo con Checkpointer e Interrupciones HITL antes de ejecutar acciones en disco/externas
+    # Compilar el grafo con Checkpointer persistente e Interrupciones HITL
     app_graph = workflow.compile(
         checkpointer=memory_checkpointer,
         interrupt_before=[

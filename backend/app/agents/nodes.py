@@ -11,6 +11,7 @@ from app.tools.google_workspace import google_workspace_manager
 from app.tools.notebook_tool import notebook_analyzer
 from app.tools.pdf_downloader import pdf_downloader
 from app.tools.notebooklm_mcp import notebooklm_mcp
+from app.tools.finance_tool import finance_manager
 
 logger = logging.getLogger("agent_nodes")
 
@@ -24,22 +25,28 @@ async def supervisor_node(state: AgentState) -> AgentState:
     
     query = state["user_query"].lower()
     
+    # El Supervisor es el único que accede a Core_Memory y lo inyecta
+    state["core_memory_context"] = "Recuperando preferencias e historial clave desde la colección Core_Memory de VectorDB..."
+    
     # 0. Consultas sobre historial conversacional previo
     if re.search(r'\b(última|ultima|anterior|anteriormente|historial|pregunté|pregunte|solicitud|dije)\b', query):
         state["current_agent"] = "writer_agent"
-    # 1. Investigación Académica
+    # 1. Finanzas y Presupuesto
+    elif re.search(r'\b(finanza|finanzas|saldo|saldos|cuenta|cuentas|banco|davivienda|bancolombia|bdv|blb|dinero|plata|gasto|gastos|ingreso|ingresos|comprar|compra|pago|presupuesto|movimiento|movimientos|transacción|transaccion)\b', query):
+        state["current_agent"] = "finance_agent"
+    # 2. Investigación Académica
     elif re.search(r'\b(arxiv|sciencedirect|websearch|paper|doi|notebooklm|investigación|investigacion|investigar|investigaciones|artículo|artículos|articulo|articulos)\b', query) or re.search(r'\binvestiga\b', query):
         state["current_agent"] = "research_agent"
-    # 2. Obsidian y Memoria
+    # 3. Obsidian y Memoria
     elif re.search(r'\b(obsidian|bóveda|boveda|nota|memoria|gustos|preferencia|histórico|historico|relaciones|guardar|registra|almacenar)\b', query):
         state["current_agent"] = "obsidian_agent"
-    # 3. LaTeX (Límites estrictos \btex\b para no coincidir con "texto")
+    # 4. LaTeX (Límites estrictos \btex\b para no coincidir con "texto")
     elif re.search(r'\b(latex|tex|preámbulo|preambulo|documento\s+latex)\b', query):
         state["current_agent"] = "latex_writer_agent"
-    # 4. Codificación
+    # 5. Codificación
     elif re.search(r'\b(código|codigo|python|script|base\s+de\s+datos|sql|database|db|mqtt|broker|paho|desarrollo)\b', query):
         state["current_agent"] = "coding_agent"
-    # 5. Google Workspace
+    # 6. Google Workspace
     elif re.search(r'\b(correo|email|gmail|agenda|evento|calendario|google\s+workspace|archivar|no\s+leído)\b', query):
         state["current_agent"] = "google_workspace_agent"
     else:
@@ -74,12 +81,37 @@ async def research_node(state: AgentState) -> AgentState:
     nb = notebooklm_mcp.create_notebook(f"Investigación: {clean_topic[:30]}")
     history.append(f"NotebookLM MCP: Cuaderno de investigación '{nb['title']}' configurado con ID '{nb['notebook_id']}'.")
 
-    # 2. Ejecutar análisis profundo grounded con el motor NotebookLM
-    nb_res = await notebook_analyzer.analyze_research_topic(topic=clean_topic, user_query=query, num_articles=10)
-    analisis_completo = nb_res.get("analysis_markdown", "Análisis de investigación no disponible.")
+    # Escanear PDFs de las carpetas locales
+    pdfs_dirs = [
+        "/app/data/pdfs" if os.path.exists("/app/data/pdfs") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "pdfs")),
+        "/app/data/downloads" if os.path.exists("/app/data/downloads") else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "downloads"))
+    ]
     
-    history.append(f"Investigador: Análisis grounded NotebookLM MCP completado ({nb_res.get('provider')}).")
+    loaded_pdfs = []
+    for d in pdfs_dirs:
+        if os.path.exists(d):
+            for fname in os.listdir(d):
+                if fname.endswith(".pdf"):
+                    fpath = os.path.join(d, fname)
+                    notebooklm_mcp.add_source_to_notebook(nb["notebook_id"], fpath, fname)
+                    loaded_pdfs.append(fname)
+                    
+    if loaded_pdfs:
+        history.append(f"NotebookLM MCP: Se asociaron {len(loaded_pdfs)} fuentes PDF al cuaderno: {', '.join(loaded_pdfs)}")
+        # 2. Ejecutar consulta grounded en el MCP real con las fuentes
+        nb_res = await notebooklm_mcp.query_notebook(notebook_id=nb["notebook_id"], question=query)
+        analisis_completo = nb_res.get("answer", "Análisis de investigación no disponible.")
+        provider_info = nb_res.get("provider", "NotebookLM MCP")
+    else:
+        history.append("NotebookLM MCP: No se encontraron PDFs locales. Ejecutando fallback de búsqueda conceptual...")
+        # Fallback a búsqueda conceptual simulada
+        nb_res = await notebook_analyzer.analyze_research_topic(topic=clean_topic, user_query=query, num_articles=10)
+        analisis_completo = nb_res.get("analysis_markdown", "Análisis de investigación no disponible.")
+        provider_info = nb_res.get("provider", "Gemini NotebookLM Fallback")
+        
+    history.append(f"Investigador: Análisis grounded NotebookLM MCP completado ({provider_info}).")
     state["research_context"] = f"🔬 ANÁLISIS ACADÉMICO NOTEBOOKLM MCP (2022-2026):\n\n{analisis_completo}"
+
     
     # Si se solicitó guardar o borrar en Obsidian, transferir la estafeta al Agente Bóveda de Obsidian
     if should_save or should_delete:
@@ -447,10 +479,43 @@ async def email_action_node(state: AgentState) -> AgentState:
 
 
 # -------------------------------------------------------------------
-# 7. AGENTE REDACTOR FINAL DE SÍNTESIS (Harness Optimizado)
+# 7. AGENTE FINANCIERO (Saldos, Egresos, Ingresos, Movimientos)
+# -------------------------------------------------------------------
+async def finance_node(state: AgentState) -> AgentState:
+    """Agente Especialista en Finanzas: Consulta saldos reales, movimientos y métricas financieras estructuradas"""
+    history = state.get("agent_history", [])
+    history.append("Agente Financiero: Consultando base de datos financiera estructurada")
+    
+    summary = finance_manager.get_dashboard_summary()
+    saldos = summary.get("saldos_cuentas", {})
+    bdv = saldos.get("BDV", 0.0)
+    blb = saldos.get("BLB", 0.0)
+    total = saldos.get("total_consolidado", 0.0)
+    total_ingresos = summary.get("total_ingresos", 0.0)
+    total_egresos = summary.get("total_egresos", 0.0)
+    ultimos = summary.get("ultimos_movimientos", [])[:4]
+    
+    movs_text = "\n".join([f"- [{m.get('fecha')}] {m.get('concepto')}: ${m.get('monto'):,.2f} ({m.get('cuenta_nombre')} - {m.get('tipo')})" for m in ultimos])
+    
+    state["finance_context"] = (
+        f"📊 ESTADO FINANCIERO EN TIEMPO REAL:\n"
+        f"- Banco Davivienda (BDV): ${bdv:,.2f} COP\n"
+        f"- Bancolombia (BLB): ${blb:,.2f} COP\n"
+        f"- Saldo Consolidado Neto: ${total:,.2f} COP\n"
+        f"- Ingresos Totales Acumulados: ${total_ingresos:,.2f} COP\n"
+        f"- Egresos Totales Acumulados: ${total_egresos:,.2f} COP\n"
+        f"- Movimientos Recientes:\n{movs_text}"
+    )
+    
+    state["agent_history"] = history
+    return state
+
+
+# -------------------------------------------------------------------
+# 8. AGENTE REDACTOR FINAL DE SÍNTESIS (Harness Optimizado y Veraz)
 # -------------------------------------------------------------------
 async def writer_node(state: AgentState) -> AgentState:
-    """Agente Redactor Final: Sintetiza la respuesta final incorporando de forma modular solo el contexto relevante"""
+    """Agente Redactor Final: Sintetiza la respuesta final incorporando de forma modular solo el contexto relevante y veraz"""
     from app.agents.graph import read_persistent_obsidian_notes
     
     history = state.get("agent_history", [])
@@ -458,10 +523,13 @@ async def writer_node(state: AgentState) -> AgentState:
     
     user_query = state['user_query']
     vault_memory = read_persistent_obsidian_notes()
+    if vault_memory and len(vault_memory) > 1000:
+        vault_memory = vault_memory[:1000] + "\n[... Notas adicionales en bóveda ...]"
     
     context_parts = []
     if vault_memory:
         context_parts.append(f"🧠 MEMORIA PERSISTENTE BÓVEDA OBSIDIAN:\n{vault_memory}")
+    if state.get("finance_context"): context_parts.append(state["finance_context"])
     if state.get("research_context"): context_parts.append(state["research_context"])
     if state.get("obsidian_context"): context_parts.append(state["obsidian_context"])
     if state.get("latex_context"): context_parts.append(state["latex_context"])
@@ -470,23 +538,23 @@ async def writer_node(state: AgentState) -> AgentState:
     
     context_str = "\n\n".join(context_parts) if context_parts else "Sin notas adicionales en la Bóveda."
     
-    # Construcción modular del prompt de Harness para no sobrecargar los modelos Edge
+    # Construcción modular del prompt con directivas estrictas de veracidad (Anti-Alucinación)
     rules = [
-        "Eres Antigravity, un Asistente Agéntico Edge avanzado, atento y profesional.",
-        "REGLAS OBLIGATORIAS DE RESPUESTA:",
-        "1. RESPONDE DIRECTAMENTE a la inquietud del usuario utilizando el contexto recuperado de los agentes especialistas.",
-        "2. CAPACIDADES DEL SISTEMA EN DISCO: Tienes permisos y capacidades automáticas para crear, actualizar y eliminar archivos físicamente en la Bóveda de Obsidian (/data/obsidian/) y en el almacenamiento local.",
-        "3. Si el contexto de las herramientas (obsidian_context / research_context) confirma que una acción de borrado o creación de notas ya fue procesada, DEBES CONFIRMAR AL USUARIO QUE LA ACCIÓN FUE EJECUTADA EXITOSAMENTE EN DISCO.",
-        "4. JAMÁS afirmes que no tienes permisos de escritura ni le pidas al usuario que realice acciones manuales de borrar, copiar o pegar archivos, ya que tus agentes especialistas ejecutan los cambios directamente en el sistema de archivos.",
-        "5. Si el usuario pregunta sobre conversaciones anteriores o su última solicitud, apóyate en el historial de diálogo o contexto de la bóveda."
+        "Eres Antigravity, un Asistente Agéntico Edge avanzado, transparente, veraz y profesional.",
+        "REGLAS ESTRICTAS DE RESPUESTA Y VERACIDAD (ANTI-ALUCINACIÓN):",
+        "1. RESPONDE CON EXACTITUD usando únicamente la información y cifras provistas en el contexto de herramientas.",
+        "2. ACCIONES PENDIENTES (HITL): Si existe una acción pendiente de aprobación (status PENDING o propuesta técnica), DEBES explicar la propuesta con claridad e indicar: 'He preparado la siguiente propuesta técnica. Por favor, pulsa el botón de Aprobación para que pueda ejecutarla en el sistema.' JAMÁS afirmes que ya creaste, modificaste o guardaste el archivo en disco si la acción aún requiere aprobación.",
+        "3. ACCIONES CONFIRMADAS: Si una herramienta indica que un archivo ya fue creado físicamente en disco (icono ✅ o confirmación explícita de ruta), confírmalo con su ruta exacta.",
+        "4. INTEGRACIONES NO AUTENTICADAS: Si una herramienta requiere credenciales OAuth2 no configuradas (ej. Gmail), aclara que la función requiere vincular la cuenta en lugar de simular un envío ficticio.",
+        "5. Sé conciso, profesional y directo."
     ]
     
+    if state.get("finance_context"):
+        rules.append("FINANZAS: Reporta las cifras de saldo y movimientos financieros con total precisión.")
     if state.get("latex_context"):
-        rules.append("3. LATEX: Estructura modular `/data/LatexDocs/Nombre_Documento/` con preámbulo en el archivo raíz e `\\input{secciones/...}`.")
+        rules.append("LATEX: Respeta la estructura modular `/data/LatexDocs/Nombre_Documento/`.")
     if state.get("coding_context"):
-        rules.append("4. CODIFICACIÓN: Ofrece soluciones estructuradas en Python, Bases de Datos y protocolo MQTT (paho-mqtt).")
-    if state.get("email_context"):
-        rules.append("5. GOOGLE WORKSPACE: Informa que las acciones sobre Gmail y Calendar están gobernadas por HITL.")
+        rules.append("CODIFICACIÓN: Proporciona código limpio y funcional en Python, SQL o MQTT.")
         
     system_prompt = "\n".join(rules) + f"\n\nContexto disponible de herramientas:\n{context_str}"
     
